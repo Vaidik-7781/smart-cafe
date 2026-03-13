@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_URL: "http://localhost:8000",
+  API_URL: "https://smart-cafe-api.onrender.com",
 
   SUPABASE_URL:      "https://efgaigfrisamqzdwhdfe.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmZ2FpZ2ZyaXNhbXF6ZHdoZGZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjA3ODUsImV4cCI6MjA4ODk5Njc4NX0.0EFkmdBd-ibWutD-2whdtwd7XoYwwLb9d-j0px0TVbM",
