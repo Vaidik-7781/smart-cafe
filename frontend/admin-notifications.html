@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Notifications — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#5d4037'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:#f7f7f6; }
+
+/* Sidebar */
+.snav { width:210px; min-width:210px; background:#fff; border-right:1px solid rgba(93,64,55,.08); height:100vh; display:flex; flex-direction:column; }
+.snav-link { display:flex; align-items:center; gap:9px; padding:8px 12px; border-radius:8px; font-size:.82rem; font-weight:600; color:rgba(93,64,55,.55); transition:all .18s; text-decoration:none; }
+.snav-link:hover  { background:rgba(93,64,55,.05); color:#5d4037; }
+.snav-link.active { background:#5d4037; color:#fff; box-shadow:0 2px 8px rgba(93,64,55,.2); }
+.snav-link .material-symbols-outlined { font-size:1rem; }
+
+/* Tabs */
+.tab-btn { padding:12px 4px; font-size:.875rem; font-weight:700; border-bottom:2px solid transparent; color:rgba(93,64,55,.4); background:none; border-top:none; border-left:none; border-right:none; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.tab-btn.active { color:#5d4037; border-bottom-color:#5d4037; }
+.tab-btn:hover:not(.active) { color:#5d4037; }
+
+/* Template preview cards */
+.preview-card { background:#fff; border:1px solid rgba(93,64,55,.1); border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.07); transition:box-shadow .2s; }
+.preview-card:hover { box-shadow:0 6px 24px rgba(93,64,55,.12); }
+.preview-header { background:rgba(93,64,55,.04); border-bottom:1px solid rgba(93,64,55,.08); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+.preview-label { font-size:.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.1em; color:rgba(93,64,55,.55); }
+
+/* Email template inner styles */
+.email-body { padding:28px 24px; text-align:center; font-family:'Work Sans',sans-serif; }
+.email-icon-wrap { width:56px; height:56px; border-radius:50%; background:rgba(93,64,55,.09); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+.email-title { font-size:1.25rem; font-weight:900; color:#1e293b; margin-bottom:8px; }
+.email-sub   { font-size:.8rem; color:#64748b; line-height:1.55; margin-bottom:18px; }
+.email-order-item { background:#f7f7f6; border:1px solid rgba(93,64,55,.08); border-radius:10px; padding:12px 14px; display:flex; align-items:center; gap:12px; text-align:left; margin-bottom:18px; }
+.email-btn { display:block; width:100%; background:#5d4037; color:#fff; border:none; border-radius:10px; padding:12px; font-size:.85rem; font-weight:800; font-family:'Work Sans',sans-serif; cursor:pointer; transition:all .2s; text-align:center; text-decoration:none; }
+.email-btn:hover { background:#4b3832; }
+.email-footer-note { font-size:.7rem; color:#94a3b8; margin-top:14px; }
+
+/* Reservation email */
+.res-hero { height:110px; width:100%; object-fit:cover; background:linear-gradient(135deg,#4e342e,#795548); position:relative; display:flex; align-items:flex-end; padding:12px 16px; }
+.res-confirmed-badge { display:inline-block; background:#5d4037; color:#fff; font-size:.58rem; font-weight:900; text-transform:uppercase; letter-spacing:.12em; padding:3px 8px; border-radius:4px; }
+.res-body { padding:22px 22px 26px; }
+.res-title { font-size:1.1rem; font-weight:900; color:#1e293b; margin-bottom:3px; }
+.res-sub { font-size:.75rem; color:#64748b; margin-bottom:18px; }
+.res-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+.res-cell { border:1.5px solid rgba(93,64,55,.1); border-radius:10px; padding:10px 12px; }
+.res-cell-label { font-size:.6rem; font-weight:900; text-transform:uppercase; letter-spacing:.1em; color:#94a3b8; margin-bottom:2px; }
+.res-cell-val { font-size:.9rem; font-weight:800; color:#1e293b; }
+
+/* Tool cards */
+.tool-card { background:rgba(93,64,55,.04); border:1px solid rgba(93,64,55,.1); border-radius:12px; padding:18px; }
+
+/* Send modal */
+.modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); z-index:200; display:none; align-items:center; justify-content:center; padding:20px; }
+.modal-bg.open { display:flex; }
+.modal-box { background:#fff; border-radius:18px; width:100%; max-width:480px; overflow:hidden; animation:popIn .25s ease; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+@keyframes popIn { from{transform:scale(.95);opacity:0} to{transform:scale(1);opacity:1} }
+</style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ════════ SIDEBAR ════════ -->
+<aside class="snav flex-shrink-0">
+  <!-- Brand -->
+  <div class="px-4 py-4 border-b border-slate-100 flex items-center gap-2.5">
+    <div class="h-8 w-8 rounded-lg bg-[#5d4037] flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-sm">send_and_archive</span>
+    </div>
+    <span class="font-black text-slate-900 text-sm">NotifyPro</span>
+  </div>
+
+  <!-- Design System badge -->
+  <div class="px-4 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+    <div class="h-9 w-9 rounded-full bg-[#5d4037]/15 flex items-center justify-center text-[#5d4037] shrink-0">
+      <span class="material-symbols-outlined text-base">hub</span>
+    </div>
+    <div>
+      <div class="text-xs font-bold text-slate-800">Design System</div>
+      <div class="text-[10px] text-slate-400 font-medium">Version 2.4.0</div>
+    </div>
+  </div>
+
+  <!-- Nav links -->
+  <nav class="flex-1 px-3 py-3 space-y-0.5">
+    <a href="admin-dashboard.html" class="snav-link">
+      <span class="material-symbols-outlined">dashboard</span> Dashboard
+    </a>
+    <a href="admin-notifications.html" class="snav-link active">
+      <span class="material-symbols-outlined">mail</span> Templates
+    </a>
+    <a href="admin-analytics.html" class="snav-link">
+      <span class="material-symbols-outlined">bar_chart</span> Analytics
+    </a>
+    <a href="#" class="snav-link">
+      <span class="material-symbols-outlined">settings</span> Settings
+    </a>
+    <div class="pt-3 pb-1 px-1 text-[9px] text-[#5d4037]/30 font-black uppercase tracking-widest">Admin</div>
+    <a href="admin-transactions.html" class="snav-link">
+      <span class="material-symbols-outlined">receipt_long</span> Transactions
+    </a>
+    <a href="admin-reservations.html" class="snav-link">
+      <span class="material-symbols-outlined">event_seat</span> Reservations
+    </a>
+    <a href="kitchen.html" class="snav-link">
+      <span class="material-symbols-outlined">local_fire_department</span> Kitchen
+    </a>
+  </nav>
+</aside>
+
+<!-- ════════ MAIN ════════ -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- Top nav (NotifyPro style) -->
+  <header class="bg-white border-b border-slate-100 px-6 py-2.5 flex items-center justify-between shrink-0 z-40">
+    <div class="flex items-center gap-2.5">
+      <div class="h-7 w-7 rounded-lg bg-[#5d4037] flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm">send_and_archive</span>
+      </div>
+      <span class="font-black text-slate-900 text-sm">NotifyPro</span>
+    </div>
+    <nav class="hidden md:flex items-center gap-6">
+      <a href="#" class="text-sm font-bold text-slate-700 hover:text-[#5d4037] transition-colors">Templates</a>
+      <a href="#" class="text-sm font-semibold text-slate-500 hover:text-[#5d4037] transition-colors">Sent</a>
+      <a href="#" class="text-sm font-semibold text-slate-500 hover:text-[#5d4037] transition-colors">Drafts</a>
+    </nav>
+    <div class="flex items-center gap-2">
+      <button class="h-8 w-8 rounded-xl bg-[#5d4037]/8 text-[#5d4037] flex items-center justify-center hover:bg-[#5d4037]/15 transition-colors">
+        <span class="material-symbols-outlined text-base">notifications</span>
+      </button>
+      <div class="h-8 w-8 rounded-full bg-[#5d4037] flex items-center justify-center text-white text-xs font-bold">A</div>
+    </div>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="flex-1 overflow-y-auto bg-[#f7f7f6]">
+    <div class="max-w-5xl mx-auto px-6 py-6 space-y-6">
+
+      <!-- Page header -->
+      <div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight mb-1">Email Notification Templates</h1>
+        <p class="text-slate-500 text-sm max-w-2xl">
+          Professional communication design system for transactional emails. Clean, responsive, and conversion-optimised.
+        </p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b border-slate-200/80 gap-7">
+        <button class="tab-btn active" onclick="switchTab(this,'all')">All Templates</button>
+        <button class="tab-btn" onclick="switchTab(this,'orders')">Order Updates</button>
+        <button class="tab-btn" onclick="switchTab(this,'reservations')">Reservations</button>
+      </div>
+
+      <!-- Template previews grid -->
+      <div id="templatesGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- ── Template 1: Order Ready ── -->
+        <div class="preview-card" id="tpl-order-ready">
+          <div class="preview-header">
+            <span class="preview-label">Preview: Order Ready</span>
+            <div class="flex gap-1.5">
+              <button onclick="sendTestEmail('order-ready')" class="h-7 px-3 rounded-lg bg-[#5d4037]/10 text-[#5d4037] text-xs font-bold hover:bg-[#5d4037]/20 transition-colors">Send Test</button>
+              <button class="h-7 w-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                <span class="material-symbols-outlined text-sm">devices</span>
+              </button>
+            </div>
+          </div>
+          <div class="email-body">
+            <div class="email-icon-wrap">
+              <span class="material-symbols-outlined text-[#5d4037] text-2xl">shopping_bag</span>
+            </div>
+            <div class="email-title">Ready for Pickup</div>
+            <div class="email-sub">
+              Hi <strong id="customerNameOrder">Alex</strong>, your order
+              <strong class="text-[#5d4037]" id="orderNumDisplay">#49201</strong>
+              is ready and waiting for you at our Downtown location.
+            </div>
+            <!-- Order item preview -->
+            <div class="email-order-item">
+              <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#5d4037,#8d6e63);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined text-white text-sm">restaurant</span>
+              </div>
+              <div style="text-align:left;">
+                <div style="font-size:.8rem;font-weight:700;color:#1e293b;" id="orderItemName">Signature Latte</div>
+                <div style="font-size:.7rem;color:#64748b;">Ready to collect</div>
+              </div>
+            </div>
+            <a href="order-status.html" class="email-btn">View Order Status</a>
+            <div class="email-footer-note">
+              Questions? Reply to this email or call us at +91 98765 43210
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Template 2: Reservation Confirmed ── -->
+        <div class="preview-card" id="tpl-reservation">
+          <div class="preview-header">
+            <span class="preview-label">Preview: Reservation</span>
+            <div class="flex gap-1.5">
+              <button onclick="sendTestEmail('reservation')" class="h-7 px-3 rounded-lg bg-[#5d4037]/10 text-[#5d4037] text-xs font-bold hover:bg-[#5d4037]/20 transition-colors">Send Test</button>
+              <button class="h-7 w-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                <span class="material-symbols-outlined text-sm">devices</span>
+              </button>
+            </div>
+          </div>
+          <!-- Hero image area -->
+          <div style="height:110px;background:linear-gradient(135deg,#4e342e 0%,#6d4c41 50%,#8d6e63 100%);position:relative;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(255,200,150,.15),transparent 70%);"></div>
+            <!-- Cafe illustration dots -->
+            <div style="position:absolute;top:20px;left:20px;display:flex;gap:12px;opacity:.5;">
+              <div style="width:30px;height:50px;background:rgba(255,255,255,.25);border-radius:6px;"></div>
+              <div style="width:30px;height:40px;background:rgba(255,255,255,.2);border-radius:6px;margin-top:5px;"></div>
+              <div style="width:30px;height:45px;background:rgba(255,255,255,.3);border-radius:6px;"></div>
+              <div style="width:30px;height:35px;background:rgba(255,255,255,.2);border-radius:6px;margin-top:8px;"></div>
+            </div>
+            <div style="position:absolute;bottom:10px;left:14px;">
+              <span class="res-confirmed-badge">Confirmed</span>
+            </div>
+          </div>
+          <div class="res-body">
+            <div class="res-title">Reservation Confirmed</div>
+            <div class="res-sub" id="resVenueLine">Smart Cafe • <span id="resDateDisplay">Friday, Oct 24</span></div>
+            <div class="res-grid">
+              <div class="res-cell">
+                <div class="res-cell-label">Time</div>
+                <div class="res-cell-val" id="resTimeDisplay">7:30 PM</div>
+              </div>
+              <div class="res-cell">
+                <div class="res-cell-label">Guests</div>
+                <div class="res-cell-val" id="resGuestsDisplay">2 People</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <button class="email-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                <span class="material-symbols-outlined text-base">calendar_today</span>
+                Add to Calendar
+              </button>
+              <button onclick="openManageDrawer()" style="background:none;border:none;color:#5d4037;font-weight:700;font-size:.8rem;font-family:'Work Sans',sans-serif;cursor:pointer;padding:8px;transition:opacity .2s;" class="hover:opacity-70">
+                Manage Reservation
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Template 3: Order Preparing ── (shown in All / Order Updates) -->
+        <div class="preview-card tpl-order" id="tpl-order-prep">
+          <div class="preview-header">
+            <span class="preview-label">Preview: Order Preparing</span>
+            <div class="flex gap-1.5">
+              <button onclick="sendTestEmail('preparing')" class="h-7 px-3 rounded-lg bg-[#5d4037]/10 text-[#5d4037] text-xs font-bold hover:bg-[#5d4037]/20 transition-colors">Send Test</button>
+              <button class="h-7 w-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <span class="material-symbols-outlined text-sm">devices</span>
+              </button>
+            </div>
+          </div>
+          <div class="email-body">
+            <div class="email-icon-wrap" style="background:rgba(234,88,12,.08);">
+              <span class="material-symbols-outlined text-[#c2410c] text-2xl">outdoor_grill</span>
+            </div>
+            <div class="email-title">Your Order is Being Prepared 🍳</div>
+            <div class="email-sub">
+              Hi <strong id="customerNamePrep">Alex</strong>! Chef Marco has started working on your order.
+              Estimated time: <strong class="text-[#5d4037]">12–15 minutes</strong>.
+            </div>
+            <!-- Progress bar -->
+            <div style="background:#f1ebe7;border-radius:8px;height:8px;margin-bottom:18px;overflow:hidden;">
+              <div style="background:#5d4037;width:40%;height:100%;border-radius:8px;"></div>
+            </div>
+            <a href="order-status.html" class="email-btn">Track Live Status</a>
+            <div class="email-footer-note">You'll receive another email when your order is ready.</div>
+          </div>
+        </div>
+
+        <!-- ── Template 4: Reservation Reminder ── -->
+        <div class="preview-card tpl-reservation" id="tpl-res-reminder">
+          <div class="preview-header">
+            <span class="preview-label">Preview: Reservation Reminder</span>
+            <div class="flex gap-1.5">
+              <button onclick="sendTestEmail('reminder')" class="h-7 px-3 rounded-lg bg-[#5d4037]/10 text-[#5d4037] text-xs font-bold hover:bg-[#5d4037]/20 transition-colors">Send Test</button>
+              <button class="h-7 w-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                <span class="material-symbols-outlined text-sm">devices</span>
+              </button>
+            </div>
+          </div>
+          <div class="email-body">
+            <div class="email-icon-wrap" style="background:rgba(234,179,8,.1);">
+              <span class="material-symbols-outlined text-yellow-600 text-2xl">alarm</span>
+            </div>
+            <div class="email-title">Reminder: Your Table is Reserved!</div>
+            <div class="email-sub">
+              Don't forget your reservation at <strong class="text-[#5d4037]">Smart Cafe</strong>.
+              Your table will be held for <strong>15 minutes</strong> past your booking time.
+            </div>
+            <div class="res-grid" style="margin-bottom:18px;">
+              <div class="res-cell">
+                <div class="res-cell-label">Today at</div>
+                <div class="res-cell-val">7:30 PM</div>
+              </div>
+              <div class="res-cell">
+                <div class="res-cell-label">Table</div>
+                <div class="res-cell-val">Table 4</div>
+              </div>
+            </div>
+            <a href="admin-reservations.html" class="email-btn">View Reservation</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Tool cards ── -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="tool-card">
+          <span class="material-symbols-outlined text-[#5d4037] text-2xl mb-3 block">palette</span>
+          <div class="font-bold text-slate-900 text-sm mb-1">Global Styles</div>
+          <p class="text-xs text-slate-500 leading-relaxed">Manage brand colors, typography and spacing across all templates.</p>
+          <button onclick="showToast('Global styles editor coming soon')" class="mt-3 text-xs font-bold text-[#5d4037] hover:underline">Configure →</button>
+        </div>
+        <div class="tool-card">
+          <span class="material-symbols-outlined text-[#5d4037] text-2xl mb-3 block">code</span>
+          <div class="font-bold text-slate-900 text-sm mb-1">Dynamic Data</div>
+          <p class="text-xs text-slate-500 leading-relaxed">Configure variables and conditional logic for personalisation.</p>
+          <button onclick="openDynamicModal()" class="mt-3 text-xs font-bold text-[#5d4037] hover:underline">Configure →</button>
+        </div>
+        <div class="tool-card">
+          <span class="material-symbols-outlined text-[#5d4037] text-2xl mb-3 block">verified</span>
+          <div class="font-bold text-slate-900 text-sm mb-1">Spam Testing</div>
+          <p class="text-xs text-slate-500 leading-relaxed">Analyse deliverability scores before sending to customers.</p>
+          <button onclick="showToast('Running spam test… Score: 9.8/10 ✅','success')" class="mt-3 text-xs font-bold text-[#5d4037] hover:underline">Run Test →</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ════════ SEND TEST MODAL ════════ -->
+<div id="sendModal" class="modal-bg">
+  <div class="modal-box">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <div>
+        <div class="font-black text-slate-900 text-base">Send Test Email</div>
+        <div class="text-xs text-slate-500" id="modalSubtitle">Order Ready template</div>
+      </div>
+      <button onclick="closeModal('sendModal')" class="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="text-xs font-bold text-slate-700 mb-1.5 block">Recipient Email</label>
+        <input id="recipientEmail" type="email" placeholder="customer@example.com"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-[#5d4037] focus:outline-none">
+      </div>
+      <div>
+        <label class="text-xs font-bold text-slate-700 mb-1.5 block">Dynamic Variables</label>
+        <div id="dynamicVars" class="space-y-2"></div>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="dispatchTestEmail()"
+          class="flex-1 bg-[#5d4037] text-white font-bold py-3 rounded-xl text-sm hover:bg-[#4b3832] transition-colors flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">send</span> Send Test
+        </button>
+        <button onclick="closeModal('sendModal')"
+          class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold text-sm hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DYNAMIC DATA MODAL ════════ -->
+<div id="dynamicModal" class="modal-bg">
+  <div class="modal-box">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <div>
+        <div class="font-black text-slate-900 text-base">Dynamic Data Variables</div>
+        <div class="text-xs text-slate-500">Configure template variables from live data</div>
+      </div>
+      <button onclick="closeModal('dynamicModal')" class="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+    <div class="p-5 space-y-3" id="dynVarList"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+const H     = { 'x-admin-token': token };
+
+let currentTplType = '';
+const TPL_LABELS = {
+  'order-ready': 'Order Ready template',
+  'reservation': 'Reservation Confirmed template',
+  'preparing':   'Order Preparing template',
+  'reminder':    'Reservation Reminder template',
+};
+const TPL_VARS = {
+  'order-ready': [['Customer Name','Alex'],['Order Number','49201'],['Item Name','Signature Latte']],
+  'reservation': [['Customer Name','Alex'],['Date','Friday, Oct 24'],['Time','7:30 PM'],['Guests','2']],
+  'preparing':   [['Customer Name','Alex'],['Wait Time','12–15 min'],['Chef Name','Marco']],
+  'reminder':    [['Customer Name','Alex'],['Date','Today'],['Time','7:30 PM'],['Table','Table 4']],
+};
+
+// ── Tab switcher ──
+function switchTab(btn, tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const all   = document.querySelectorAll('.preview-card');
+  const order = document.querySelectorAll('.tpl-order, #tpl-order-ready, #tpl-order-prep');
+  const resrv = document.querySelectorAll('.tpl-reservation, #tpl-reservation, #tpl-res-reminder');
+
+  if (tab === 'all') { all.forEach(c => c.style.display = ''); }
+  else if (tab === 'orders') {
+    all.forEach(c => c.style.display = 'none');
+    document.getElementById('tpl-order-ready').style.display = '';
+    document.getElementById('tpl-order-prep').style.display  = '';
+  } else {
+    all.forEach(c => c.style.display = 'none');
+    document.getElementById('tpl-reservation').style.display   = '';
+    document.getElementById('tpl-res-reminder').style.display  = '';
+  }
+}
+
+// ── Open send test modal ──
+function sendTestEmail(type) {
+  currentTplType = type;
+  document.getElementById('modalSubtitle').textContent = TPL_LABELS[type] || type;
+  const vars = TPL_VARS[type] || [];
+  document.getElementById('dynamicVars').innerHTML = vars.map(([label, val]) => `
+    <div class="flex items-center gap-3">
+      <label class="text-xs font-semibold text-slate-500 w-28 shrink-0">${label}</label>
+      <input type="text" value="${val}"
+        class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs focus:border-[#5d4037] focus:outline-none"
+        data-var="${label.toLowerCase().replace(/\s/g,'-')}">
+    </div>
+  `).join('');
+  document.getElementById('sendModal').classList.add('open');
+}
+
+// ── Simulate dispatch ──
+function dispatchTestEmail() {
+  const email = document.getElementById('recipientEmail').value.trim();
+  if (!email) { showToast('Please enter a recipient email', 'error'); return; }
+  // Collect dynamic vars and update preview
+  document.querySelectorAll('#dynamicVars input').forEach(inp => {
+    const v = inp.value;
+    if (inp.dataset.var === 'customer-name') {
+      document.querySelectorAll('#customerNameOrder,#customerNamePrep').forEach(el => el.textContent = v);
+    }
+    if (inp.dataset.var === 'order-number')  document.getElementById('orderNumDisplay').textContent = '#' + v;
+    if (inp.dataset.var === 'item-name')      document.getElementById('orderItemName').textContent = v;
+    if (inp.dataset.var === 'date')           document.getElementById('resDateDisplay').textContent = v;
+    if (inp.dataset.var === 'time')           { const t = document.getElementById('resTimeDisplay'); if(t) t.textContent = v; }
+    if (inp.dataset.var === 'guests')         { const g = document.getElementById('resGuestsDisplay'); if(g) g.textContent = v + ' People'; }
+  });
+  showToast(`📧 Test email sent to ${email}`, 'success');
+  closeModal('sendModal');
+}
+
+// ── Dynamic data modal ──
+function openDynamicModal() {
+  const vars = [
+    ['{{customer_name}}', 'Customer\'s full name from order'],
+    ['{{order_id}}',      'Short order ID (e.g. TK-9921)'],
+    ['{{order_items}}',   'Comma-separated list of ordered items'],
+    ['{{table_number}}',  'Table number from QR scan'],
+    ['{{total_amount}}',  'Order grand total with tax'],
+    ['{{reservation_date}}','Date of reservation (formatted)'],
+    ['{{reservation_time}}','Time slot (e.g. 7:30 PM)'],
+    ['{{guest_count}}',   'Number of guests in party'],
+    ['{{cafe_name}}',     'Smart Cafe'],
+    ['{{cafe_phone}}',    'Contact number for queries'],
+  ];
+  document.getElementById('dynVarList').innerHTML = vars.map(([v, desc]) => `
+    <div class="flex items-start gap-3 py-2 border-b border-slate-50 last:border-none">
+      <code style="background:rgba(93,64,55,.08);color:#5d4037;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:700;white-space:nowrap;flex-shrink:0;">${v}</code>
+      <span class="text-xs text-slate-500">${desc}</span>
+    </div>
+  `).join('');
+  document.getElementById('dynamicModal').classList.add('open');
+}
+
+// ── Manage reservation drawer (link to admin-reservations) ──
+function openManageDrawer() { window.location.href = 'admin-reservations.html'; }
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Load real order & reservation data to populate previews ──
+async function loadLiveData() {
+  try {
+    const orders = await fetch(`${CONFIG.API_URL}/orders`, { headers: H }).then(r => r.json());
+    const latest = orders.find(o => o.status === 'ready') || orders[0];
+    if (latest) {
+      const name = latest.customer_name || 'Alex';
+      document.querySelectorAll('#customerNameOrder,#customerNamePrep').forEach(el => el.textContent = name.split(' ')[0]);
+      document.getElementById('orderNumDisplay').textContent = '#' + latest.id.slice(-5).toUpperCase();
+      const items = latest.order_items || [];
+      if (items[0]?.menu_items?.name) {
+        document.getElementById('orderItemName').textContent = items[0].menu_items.name;
+      }
+    }
+  } catch {}
+
+  try {
+    const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+    const res = await fetch(`${CONFIG.API_URL}/reservations`, { headers: { 'x-admin-token': token } }).then(r => r.json());
+    const next = res.find(r => r.status === 'confirmed') || res[0];
+    if (next) {
+      const d = new Date(next.reservation_date);
+      document.getElementById('resDateDisplay').textContent =
+        d.toLocaleDateString('en-IN', { weekday:'long', month:'short', day:'numeric' });
+      document.getElementById('resTimeDisplay').textContent  = next.reservation_time || '7:30 PM';
+      document.getElementById('resGuestsDisplay').textContent = `${next.guests || 2} People`;
+    }
+  } catch {}
+}
+
+function showToast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`; el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+loadLiveData();
+</script>
+</body>
+</html>

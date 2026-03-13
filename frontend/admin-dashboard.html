@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { primary:'#4b3832', sidebar:'#3d2b1f' },
+    fontFamily: { display:['Work Sans','sans-serif'] }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Work Sans', sans-serif; }
+  .sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; font-size:.875rem; font-weight:600; color:rgba(255,255,255,.6); transition:all .2s; }
+  .sidebar-link:hover { background:rgba(255,255,255,.08); color:#fff; }
+  .sidebar-link.active { background:#5d4037; color:#fff; }
+  .sidebar-link .material-symbols-outlined { font-size:1.1rem; }
+  .kpi-card { background:#fff; border:1px solid #f0ebe6; border-radius:14px; padding:20px 22px; }
+  .stat-up { color:#16a34a; font-size:.75rem; font-weight:600; }
+  .stat-down { color:#dc2626; font-size:.75rem; font-weight:600; }
+  .badge-completed { background:#dcfce7; color:#166534; padding:2px 8px; border-radius:20px; font-size:.7rem; font-weight:700; text-transform:uppercase; }
+  .badge-pending   { background:#fef9c3; color:#854d0e; padding:2px 8px; border-radius:20px; font-size:.7rem; font-weight:700; text-transform:uppercase; }
+  .badge-cancelled { background:#fee2e2; color:#991b1b; padding:2px 8px; border-radius:20px; font-size:.7rem; font-weight:700; text-transform:uppercase; }
+  .avatar { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; }
+  .real-time-badge { background:#dcfce7; color:#166534; font-size:.65rem; font-weight:700; padding:2px 7px; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; border:1px solid #bbf7d0; }
+</style>
+</head>
+<body class="bg-[#f5f4f0] font-display flex h-screen overflow-hidden">
+
+<!-- Sidebar -->
+<aside class="w-[200px] bg-[#3d2b1f] flex flex-col shrink-0 h-screen">
+  <div class="px-5 py-5 border-b border-white/10">
+    <div class="flex items-center gap-2.5">
+      <div class="h-8 w-8 rounded-lg bg-[#5d4037] flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm">coffee</span>
+      </div>
+      <div>
+        <div class="font-black text-white text-sm leading-none">Smart Cafe</div>
+        <div class="text-white/40 text-[10px] font-semibold uppercase tracking-wide">Admin Panel</div>
+      </div>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+    <a href="admin-dashboard.html" class="sidebar-link active">
+      <span class="material-symbols-outlined">dashboard</span> Dashboard
+    </a>
+    <a href="admin-dashboard.html" class="sidebar-link">
+      <span class="material-symbols-outlined">bar_chart</span> Analytics
+    </a>
+    <a href="admin-reservations.html" class="sidebar-link">
+      <span class="material-symbols-outlined">receipt_long</span> Orders
+    </a>
+    <a href="admin-menu.html" class="sidebar-link">
+      <span class="material-symbols-outlined">inventory_2</span> Inventory
+    </a>
+    <a href="admin-tables.html" class="sidebar-link">
+      <span class="material-symbols-outlined">group</span> Customers
+    </a>
+    <a href="admin-transactions.html" class="sidebar-link">
+      <span class="material-symbols-outlined">receipt_long</span> Transactions
+    </a>
+    <a href="admin-notifications.html" class="sidebar-link">
+      <span class="material-symbols-outlined">mail</span> Notifications
+    </a>
+    <a href="#" class="sidebar-link">
+      <span class="material-symbols-outlined">settings</span> Settings
+    </a>
+  </nav>
+  <div class="px-3 py-4 border-t border-white/10 space-y-3">
+    <div class="px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
+        <span class="text-white text-xs font-bold">Store Status</span>
+      </div>
+      <div class="text-green-400 text-sm font-black">Open Now</div>
+    </div>
+    <a href="index.html" target="_blank" class="flex items-center justify-center gap-2 w-full rounded-xl bg-[#5d4037] py-2.5 text-white text-xs font-bold hover:bg-[#6d4c41] transition-all">
+      <span class="material-symbols-outlined text-sm">open_in_new</span> View Live Store
+    </a>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="flex-1 flex flex-col overflow-hidden">
+  <!-- Top bar -->
+  <header class="bg-white border-b border-slate-100 px-8 py-3.5 flex items-center justify-between shrink-0">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-lg font-black text-slate-900">Analytics Overview</h1>
+        <span class="real-time-badge flex items-center gap-1">
+          <span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span> Real-Time
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="h-9 w-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100">
+        <span class="material-symbols-outlined text-lg">search</span>
+      </button>
+      <div class="flex items-center gap-2.5 border-l border-slate-100 pl-3">
+        <div class="text-right">
+          <div class="text-sm font-bold text-slate-800">Alex Rivera</div>
+          <div class="text-xs text-slate-400 font-medium">Store Manager</div>
+        </div>
+        <div class="h-9 w-9 rounded-full bg-[#5d4037] flex items-center justify-center text-white font-bold text-sm">AR</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main class="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+
+    <!-- KPI Row -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div class="kpi-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Revenue</div>
+          <div class="h-8 w-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+            <span class="material-symbols-outlined text-amber-600 text-base">payments</span>
+          </div>
+        </div>
+        <div id="kpiRevenue" class="text-2xl font-black text-slate-900 mb-1">$4,250.00</div>
+        <div class="stat-up">↑ 12.5% vs last week</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Daily Customers</div>
+          <div class="h-8 w-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <span class="material-symbols-outlined text-blue-600 text-base">group</span>
+          </div>
+        </div>
+        <div id="kpiOrders" class="text-2xl font-black text-slate-900 mb-1">—</div>
+        <div class="stat-up">↑ 5.2% from yesterday</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Avg. Order Value</div>
+          <div class="h-8 w-8 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center">
+            <span class="material-symbols-outlined text-purple-600 text-base">shopping_bag</span>
+          </div>
+        </div>
+        <div id="kpiAvg" class="text-2xl font-black text-slate-900 mb-1">—</div>
+        <div class="stat-up">↑ 1.4% per transaction</div>
+      </div>
+      <div class="kpi-card">
+        <div class="flex items-start justify-between mb-3">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Customer Retention</div>
+          <div class="h-8 w-8 rounded-lg bg-green-50 border border-green-100 flex items-center justify-center">
+            <span class="material-symbols-outlined text-green-600 text-base">autorenew</span>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-slate-900 mb-1">68%</div>
+        <div class="text-slate-400 text-xs font-semibold">Stable monthly average</div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+      <!-- Daily Revenue chart (3/5) -->
+      <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <div class="font-black text-slate-900 text-base">Daily Revenue</div>
+            <div class="text-xs text-slate-400 font-medium">Weekly trend analysis</div>
+          </div>
+          <span class="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">Last 7 Days ↓</span>
+        </div>
+        <canvas id="revenueChart" height="140"></canvas>
+      </div>
+      <!-- Peak hours (2/5) -->
+      <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <div class="font-black text-slate-900 text-base">Peak Hours</div>
+            <div class="text-xs text-slate-400 font-medium">Visitor traffic by hour</div>
+          </div>
+          <div class="flex items-center gap-1 text-xs text-slate-400 font-semibold">
+            <span class="h-2 w-2 rounded-full bg-primary inline-block"></span> Traffic
+          </div>
+        </div>
+        <canvas id="peakChart" height="140"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom Row -->
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+      <!-- Top items (2/5) -->
+      <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+        <div class="font-black text-slate-900 mb-4">Top Performing Items</div>
+        <div id="topItems" class="space-y-3">
+          <div class="flex justify-center py-6"><div class="spinner"></div></div>
+        </div>
+        <a href="admin-menu.html" class="mt-4 block text-center text-xs font-bold text-[#5d4037] hover:underline uppercase tracking-wide">
+          View Menu Analytics
+        </a>
+      </div>
+
+      <!-- Recent Transactions (3/5) -->
+      <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <div class="font-black text-slate-900">Recent Transactions</div>
+          <a href="admin-reservations.html" class="text-xs font-bold text-[#5d4037] hover:underline">View All</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                <th class="pb-2 text-left">Customer</th>
+                <th class="pb-2 text-left">Order ID</th>
+                <th class="pb-2 text-left">Items</th>
+                <th class="pb-2 text-left">Amount</th>
+                <th class="pb-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody id="recentOrders" class="divide-y divide-slate-50">
+              <tr><td colspan="5" class="py-6 text-center"><div class="spinner" style="margin:0 auto;"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+const H = { 'x-admin-token': token };
+const COLORS = ['#4b3832','#8d6e63','#d4a574','#a5c8a5','#7ba7bc'];
+
+async function init() {
+  await Promise.all([loadKPIs(), loadWeeklySales(), loadPeakHours(), loadTopItems(), loadRecentOrders()]);
+}
+
+async function loadKPIs() {
+  const [sales, orders] = await Promise.all([
+    fetch(`${CONFIG.API_URL}/analytics/daily-sales`, {headers:H}).then(r=>r.json()),
+    fetch(`${CONFIG.API_URL}/orders`, {headers:H}).then(r=>r.json()),
+  ]);
+  document.getElementById('kpiOrders').textContent = sales.order_count || 0;
+  const avg = sales.order_count > 0 ? (sales.total_sales / sales.order_count) : 0;
+  document.getElementById('kpiAvg').textContent = `₹${avg.toFixed(2)}`;
+  document.getElementById('kpiRevenue').textContent = `₹${(sales.total_sales||0).toFixed(2)}`;
+}
+
+async function loadWeeklySales() {
+  const data = await fetch(`${CONFIG.API_URL}/analytics/weekly-sales`, {headers:H}).then(r=>r.json());
+  const labels = data.map(d => new Date(d.date).toLocaleDateString('en',{weekday:'short'}).toUpperCase());
+  new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: data.map(d=>d.sales),
+        borderColor: '#4b3832', borderWidth: 2.5,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0,0,0,200);
+          g.addColorStop(0,'rgba(75,56,50,.15)'); g.addColorStop(1,'rgba(75,56,50,0)'); return g;
+        },
+        fill: true, tension: 0.45, pointRadius: 4, pointBackgroundColor:'#4b3832', pointBorderColor:'#fff', pointBorderWidth:2
+      }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}},
+      scales: { x:{grid:{display:false},ticks:{font:{size:10,weight:'700'},color:'#94a3b8'}},
+                y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:10},color:'#94a3b8'},beginAtZero:true} } }
+  });
+}
+
+async function loadPeakHours() {
+  const data = await fetch(`${CONFIG.API_URL}/analytics/peak-hours`, {headers:H}).then(r=>r.json());
+  const filtered = data.filter(d => d.hour >= '08:00' && d.hour <= '21:00');
+  new Chart(document.getElementById('peakChart'), {
+    type: 'bar',
+    data: {
+      labels: filtered.map(d => d.hour.replace(':00','')),
+      datasets: [{ data: filtered.map(d=>d.orders), backgroundColor: filtered.map(d => d.orders === Math.max(...filtered.map(x=>x.orders)) ? '#4b3832' : '#e8ddd7'), borderRadius: 5 }]
+    },
+    options: { responsive:true, plugins:{legend:{display:false}},
+      scales: { x:{grid:{display:false},ticks:{font:{size:9,weight:'600'},color:'#94a3b8'}},
+                y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9}},beginAtZero:true} } }
+  });
+}
+
+async function loadTopItems() {
+  const data = await fetch(`${CONFIG.API_URL}/analytics/popular-items`, {headers:H}).then(r=>r.json());
+  const max = data[0]?.total_ordered || 1;
+  const imgs = ['https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=60','https://images.unsplash.com/photo-1534778101976-62847782c213?w=60','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=60','https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=60'];
+  document.getElementById('topItems').innerHTML = data.slice(0,4).map((item,i) => `
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-cover bg-center shrink-0 bg-slate-100" style="background-image:url('${imgs[i]||imgs[0]}')"></div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-bold text-slate-800 truncate">${item.item}</div>
+        <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+          <div class="h-full bg-[#4b3832] rounded-full" style="width:${Math.round((item.total_ordered/max)*100)}%"></div>
+        </div>
+      </div>
+      <div class="text-sm font-black text-slate-700 shrink-0">${item.total_ordered}</div>
+    </div>
+  `).join('') || '<p class="text-slate-400 text-sm text-center py-4">No data yet</p>';
+}
+
+async function loadRecentOrders() {
+  const data = await fetch(`${CONFIG.API_URL}/orders`, {headers:H}).then(r=>r.json());
+  const recent = data.slice(0,5);
+  const tbody = document.getElementById('recentOrders');
+  if (!recent.length) { tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-400 text-sm">No orders yet</td></tr>'; return; }
+  const colorMap = {'JD':'#4b3832','MS':'#1e40af','RK':'#065f46','AL':'#7c2d12','GH':'#6b21a8'};
+  tbody.innerHTML = recent.map((o,i) => {
+    const initials = (o.customer_name||'Guest').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const colors = ['#4b3832','#1e40af','#065f46','#7c2d12','#6b21a8'];
+    const statusMap = { served:'completed', placed:'pending', preparing:'pending', ready:'pending' };
+    const s = statusMap[o.status] || 'pending';
+    const items = o.order_items?.length || 0;
+    return `<tr>
+      <td class="py-3 pr-4">
+        <div class="flex items-center gap-2.5">
+          <div class="avatar text-white" style="background:${colors[i%colors.length]}">${initials}</div>
+          <span class="font-semibold text-slate-800 text-sm">${o.customer_name||'Guest'}</span>
+        </div>
+      </td>
+      <td class="py-3 pr-4 text-slate-500 font-mono text-xs">#TR-${o.id.slice(-4).toUpperCase()}</td>
+      <td class="py-3 pr-4 text-slate-600 text-xs">${items} Item${items!==1?'s':''}</td>
+      <td class="py-3 pr-4 font-black text-slate-800 text-sm">₹${parseFloat(o.total_amount).toFixed(2)}</td>
+      <td class="py-3"><span class="badge-${s}">${s.toUpperCase()}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3000);}
+
+init();
+</script>
+</body>
+</html>

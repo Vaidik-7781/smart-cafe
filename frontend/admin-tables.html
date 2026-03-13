@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table Availability Board — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#4b3832'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family: 'Work Sans', sans-serif; }
+
+.table-card {
+  background:#fff; border-radius:14px; padding:16px;
+  border-top:4px solid #e2e8f0;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+  transition: all .2s; cursor:pointer; position:relative;
+}
+.table-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.1); }
+.table-card.available  { border-top-color:#22c55e; }
+.table-card.occupied   { border-top-color:#ef4444; }
+.table-card.reserved   { border-top-color:#f59e0b; }
+.table-card.overtime   { border-top-color:#ef4444; background:#fff8f8; }
+
+.status-chip {
+  font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em;
+  padding:2px 7px; border-radius:20px;
+}
+.chip-occupied  { background:#fee2e2; color:#991b1b; }
+.chip-available { background:#dcfce7; color:#166534; }
+.chip-reserved  { background:#fef3c7; color:#92400e; }
+.chip-ready     { background:#dbeafe; color:#1e40af; }
+.chip-overtime  { background:#fee2e2; color:#b91c1c; }
+
+.timer { font-size:1.1rem; font-weight:800; color:#1e293b; font-variant-numeric:tabular-nums; }
+.timer.danger { color:#dc2626; }
+.timer.warn   { color:#f59e0b; }
+
+.zone-btn { display:flex; align-items:center; gap:8px; padding:10px 14px; border-radius:10px; font-size:.875rem; font-weight:600; color:rgba(0,0,0,.5); transition:all .2s; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+.zone-btn:hover { background:#f5f0ed; color:#4b3832; }
+.zone-btn.active { background:#4b3832; color:#fff; }
+.zone-btn .material-symbols-outlined { font-size:1rem; }
+
+.action-btn { display:flex; flex-direction:column; align-items:center; gap:4px; padding:8px 16px; border-radius:12px; background:#fff; border:1px solid #e2e8f0; cursor:pointer; transition:all .2s; font-size:.7rem; font-weight:700; color:#475569; }
+.action-btn:hover { background:#4b3832; color:#fff; border-color:#4b3832; }
+.action-btn .material-symbols-outlined { font-size:1.2rem; }
+.action-btn.add { background:#4b3832; color:#fff; border-color:#4b3832; border-radius:50%; width:44px; height:44px; padding:0; display:flex; align-items:center; justify-content:center; }
+
+.tab-btn { padding:8px 20px; font-size:.875rem; font-weight:600; color:#64748b; border-bottom:2px solid transparent; transition:all .2s; }
+.tab-btn.active { color:#4b3832; border-bottom-color:#4b3832; }
+</style>
+</head>
+<body class="bg-[#f5f4f0] flex h-screen overflow-hidden">
+
+<!-- Left Sidebar -->
+<aside class="w-[180px] bg-white border-r border-slate-100 flex flex-col h-screen shrink-0">
+  <div class="px-4 py-5 border-b border-slate-100">
+    <div class="flex items-center gap-2">
+      <div class="h-8 w-8 rounded-lg bg-[#4b3832] flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm">grid_view</span>
+      </div>
+      <div>
+        <div class="font-black text-slate-900 text-sm leading-none">Cafe Vista</div>
+        <div class="text-slate-400 text-[10px] font-semibold">Live Floor Monitoring</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-3 py-4 flex-1">
+    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">Zones</div>
+    <div class="space-y-0.5">
+      <button class="zone-btn active" onclick="setZone('main',this)">
+        <span class="material-symbols-outlined">home</span> Main Hall
+      </button>
+      <button class="zone-btn" onclick="setZone('terrace',this)">
+        <span class="material-symbols-outlined">deck</span> Terrace
+      </button>
+      <button class="zone-btn" onclick="setZone('vip',this)">
+        <span class="material-symbols-outlined">star</span> VIP Lounge
+      </button>
+    </div>
+
+    <div class="mt-6 space-y-3">
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2">Summary Today</div>
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+        <div class="text-[10px] text-slate-500 font-semibold mb-1">Available Tables</div>
+        <div class="text-2xl font-black text-slate-900" id="summaryAvail">—</div>
+        <div class="text-[10px] text-slate-400" id="summaryTotal">/ 0</div>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+        <div class="text-[10px] text-slate-500 font-semibold mb-1">Active Turnovers</div>
+        <div class="text-2xl font-black text-slate-900" id="summaryTurnover">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-4 py-4 border-t border-slate-100">
+    <div class="flex items-center gap-1.5 text-xs text-green-600 font-bold mb-1">
+      <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span> Live Server Connected
+    </div>
+    <div class="text-[10px] text-slate-400" id="lastUpdateTime">Last updated: Just now</div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- Top nav -->
+  <header class="bg-white border-b border-slate-100 px-6 py-0 flex items-center justify-between shrink-0">
+    <div class="flex">
+      <button class="tab-btn active">Floor Plan</button>
+      <a href="admin-reservations.html" class="tab-btn">Reservations</a>
+      <a href="admin-dashboard.html" class="tab-btn">Analytics</a>
+    </div>
+    <div class="flex items-center gap-2 py-3">
+      <button class="h-8 w-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100">
+        <span class="material-symbols-outlined text-base">notifications</span>
+      </button>
+      <button onclick="loadTables()" class="h-8 w-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100">
+        <span class="material-symbols-outlined text-base">refresh</span>
+      </button>
+      <div class="h-8 w-8 rounded-full bg-[#4b3832] flex items-center justify-center text-white text-xs font-bold ml-1">A</div>
+    </div>
+  </header>
+
+  <!-- Floor title + legend -->
+  <div class="bg-white border-b border-slate-100 px-6 py-4 flex items-end justify-between shrink-0">
+    <div>
+      <h1 class="text-xl font-black text-slate-900">Main Hall Floor Plan</h1>
+      <p class="text-sm text-slate-400 font-medium">Real-time occupancy and turnover tracking</p>
+    </div>
+    <div class="flex items-center gap-5 text-xs font-bold text-slate-600">
+      <div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span> Available</div>
+      <div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-red-500"></span> Occupied</div>
+      <div class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span> Reserved</div>
+    </div>
+  </div>
+
+  <!-- Table grid -->
+  <div class="flex-1 overflow-y-auto p-6">
+    <div id="tableGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <div class="col-span-full flex justify-center py-16"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <!-- Bottom action bar -->
+  <div class="bg-white border-t border-slate-100 px-6 py-3 flex items-center justify-center gap-3 shrink-0">
+    <button class="action-btn add" onclick="loadTables()">
+      <span class="material-symbols-outlined text-xl">add</span>
+    </button>
+    <button class="action-btn" onclick="loadTables()">
+      <span class="material-symbols-outlined">event_seat</span>
+      Quick Seat
+    </button>
+    <button class="action-btn" onclick="window.location.href='admin-reservations.html'">
+      <span class="material-symbols-outlined">calendar_month</span>
+      Schedule
+    </button>
+    <button class="action-btn">
+      <span class="material-symbols-outlined">cleaning_services</span>
+      Clean Up
+    </button>
+    <button class="action-btn">
+      <span class="material-symbols-outlined">swap_horiz</span>
+      Flow
+    </button>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+let tables = [], orders = [], timers = {};
+
+async function loadTables() {
+  [tables, orders] = await Promise.all([
+    fetch(`${CONFIG.API_URL}/tables`).then(r=>r.json()),
+    fetch(`${CONFIG.API_URL}/orders`,{headers:{'x-admin-token': sessionStorage.getItem('adminToken')||CONFIG.ADMIN_TOKEN}}).then(r=>r.json())
+  ]);
+  renderGrid();
+  updateSummary();
+  document.getElementById('lastUpdateTime').textContent = 'Last updated: Just now';
+}
+
+function updateSummary() {
+  const avail = tables.filter(t=>t.status==='available').length;
+  document.getElementById('summaryAvail').textContent = avail;
+  document.getElementById('summaryTotal').textContent = `/ ${tables.length}`;
+  const occ = tables.filter(t=>t.status==='occupied').length;
+  document.getElementById('summaryTurnover').textContent = tables.length ? Math.round((occ/tables.length)*100)+'%' : '—';
+}
+
+function getOrderForTable(tableId) {
+  return orders.find(o => o.table_id === tableId && o.status !== 'served');
+}
+
+function renderGrid() {
+  const grid = document.getElementById('tableGrid');
+  if (!tables.length) { grid.innerHTML = '<div class="col-span-full text-center py-16 text-slate-400">No tables found</div>'; return; }
+
+  grid.innerHTML = tables.map(t => {
+    const order = getOrderForTable(t.id);
+    const status = t.status; // available | occupied | reserved
+    const isOvertime = order && ((Date.now() - new Date(order.created_at))/60000) > 45;
+    const cardClass = isOvertime ? 'overtime' : status;
+    const chipClass = isOvertime ? 'chip-overtime' : `chip-${status}`;
+    const chipText = isOvertime ? 'OVERTIME' : status.toUpperCase();
+    const mins = order ? Math.floor((Date.now()-new Date(order.created_at))/60000) : 0;
+    const timerClass = isOvertime ? 'danger' : mins > 20 ? 'warn' : '';
+
+    const statusDetail = () => {
+      if (status === 'available') return `<div class="flex items-center gap-2 mt-3 text-green-600"><span class="material-symbols-outlined text-base">check_circle</span><span class="text-xs font-bold">Available</span></div>`;
+      if (status === 'reserved' && order) return `<div class="mt-3"><div class="flex items-center gap-1.5 text-slate-600 text-xs mb-1"><span class="material-symbols-outlined text-sm">schedule</span><span class="font-semibold">${new Date(order.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-xs font-bold text-slate-800">${order.customer_name||'Guest'}</div></div>`;
+      if (status === 'occupied' && order) return `<div class="mt-3"><div class="flex items-center gap-1.5 mb-1"><span class="material-symbols-outlined text-slate-500 text-sm">schedule</span><span class="timer ${timerClass}">${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}</span></div><div class="text-xs text-slate-500 font-medium">${order.customer_name||'Guest'}</div></div>`;
+      return `<div class="flex items-center gap-2 mt-3 text-green-600"><span class="material-symbols-outlined text-base">check_circle</span><span class="text-xs font-bold">Available</span></div>`;
+    };
+
+    return `
+      <div class="table-card ${cardClass}" onclick="cycleStatus('${t.id}','${status}')">
+        <div class="flex items-start justify-between mb-1">
+          <div>
+            <div class="text-xs font-black text-slate-500 uppercase tracking-wide">T-${String(t.table_number).padStart(2,'0')}</div>
+            <div class="text-[10px] text-slate-400">${t.capacity} SEATS</div>
+          </div>
+          <span class="status-chip ${chipClass}">${chipText}</span>
+        </div>
+        ${isOvertime ? `<div class="flex items-center gap-1 mt-1 text-red-600 text-xs font-bold"><span class="material-symbols-outlined text-sm">warning</span> OVERTIME</div>` : ''}
+        ${statusDetail()}
+      </div>
+    `;
+  }).join('');
+}
+
+async function cycleStatus(tableId, current) {
+  const next = { available:'occupied', occupied:'available', reserved:'available' };
+  await fetch(`${CONFIG.API_URL}/tables/${tableId}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ status: next[current] })
+  });
+  showToast(`Table → ${next[current]}`, 'success');
+  loadTables();
+}
+
+function setZone(zone, btn) {
+  document.querySelectorAll('.zone-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function subscribeRealtime() {
+  if (!CONFIG.SUPABASE_URL || CONFIG.SUPABASE_URL.includes('your-project')) {
+    setInterval(loadTables, 15000); return;
+  }
+  const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  sb.channel('tables').on('postgres_changes',{event:'*',schema:'public',table:'tables'},() => loadTables()).subscribe();
+  sb.channel('orders2').on('postgres_changes',{event:'*',schema:'public',table:'orders'},() => loadTables()).subscribe();
+}
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),2500);}
+
+loadTables();
+subscribeRealtime();
+setInterval(renderGrid, 60000); // refresh timers every minute
+</script>
+</body>
+</html>

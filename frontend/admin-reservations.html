@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservations — Smart Cafe Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#4b3832'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+</head>
+<body class="bg-[#f5f5f0] font-display text-slate-900">
+<div class="flex h-screen overflow-hidden">
+  <aside class="w-60 bg-[#1c1816] flex flex-col shrink-0">
+    <div class="px-5 py-6 border-b border-white/5"><div class="flex items-center gap-2.5"><div class="h-8 w-8 rounded-lg bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-white text-sm">coffee</span></div><span class="font-black text-white text-sm">Smart Cafe</span></div></div>
+    <nav class="flex-1 px-3 py-5 space-y-1">
+      <a href="admin-dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">dashboard</span> Dashboard</a>
+      <a href="admin-menu.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">restaurant_menu</span> Menu Items</a>
+      <a href="admin-tables.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">table_restaurant</span> Tables</a>
+      <a href="admin-reservations.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white"><span class="material-symbols-outlined text-base">calendar_month</span> Reservations</a>
+      <a href="admin-transactions.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">receipt_long</span> Transactions</a>
+      <a href="admin-analytics.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">query_stats</span> Analytics</a>
+      <a href="admin-notifications.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">mail</span> Notifications</a>
+      <a href="kitchen.html" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">restaurant</span> Kitchen View</a>
+      <a href="qr-generator.html" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white transition-all"><span class="material-symbols-outlined text-base">qr_code_2</span> QR Codes</a>
+    </nav>
+    <div class="px-3 py-4 border-t border-white/5"><a href="admin-login.html" onclick="sessionStorage.clear()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/40 hover:text-white hover:bg-white/5 transition-all"><span class="material-symbols-outlined text-base">logout</span> Sign Out</a></div>
+  </aside>
+
+  <main class="flex-1 overflow-y-auto">
+    <div class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <h1 class="text-xl font-black">Reservations</h1>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold text-slate-500">Date:</label>
+          <input type="date" id="dateFilter" onchange="loadReservations()"
+            class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-primary focus:outline-none">
+        </div>
+        <button onclick="document.getElementById('dateFilter').value='';loadReservations()"
+          class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+          Show All
+        </button>
+      </div>
+    </div>
+
+    <div class="px-8 py-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="resContainer" class="overflow-x-auto">
+          <div class="flex justify-center py-12"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+  const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+  const H = {'x-admin-token':token,'Content-Type':'application/json'};
+  document.getElementById('dateFilter').value = new Date().toISOString().split('T')[0];
+
+  async function loadReservations() {
+    const date = document.getElementById('dateFilter').value;
+    const url = date ? `${CONFIG.API_URL}/reservations?res_date=${date}` : `${CONFIG.API_URL}/reservations`;
+    const data = await fetch(url,{headers:H}).then(r=>r.json());
+    renderTable(data);
+  }
+
+  function renderTable(items) {
+    const c = document.getElementById('resContainer');
+    if (!items.length) {
+      c.innerHTML = `<div class="text-center py-16 text-slate-400"><span class="material-symbols-outlined text-5xl block mb-3">event_busy</span><p class="font-medium">No reservations found</p></div>`;
+      return;
+    }
+    c.innerHTML = `<table class="w-full text-sm">
+      <thead><tr class="text-xs font-bold text-slate-500 uppercase border-b border-slate-100 bg-slate-50">
+        <th class="px-6 py-3 text-left">Customer</th><th class="px-6 py-3 text-left">Contact</th>
+        <th class="px-6 py-3 text-left">Table</th><th class="px-6 py-3 text-left">Date & Time</th>
+        <th class="px-6 py-3 text-left">Guests</th><th class="px-6 py-3 text-left">Status</th>
+        <th class="px-6 py-3 text-left">Actions</th>
+      </tr></thead>
+      <tbody>${items.map(r=>`
+        <tr class="border-b border-slate-50 hover:bg-slate-50/70 transition-colors">
+          <td class="px-6 py-4 font-bold">${r.customer_name}</td>
+          <td class="px-6 py-4 text-slate-500">
+            ${r.customer_phone?`<div class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">phone</span>${r.customer_phone}</div>`:''}
+            ${r.customer_email?`<div class="flex items-center gap-1 text-xs"><span class="material-symbols-outlined text-xs">mail</span>${r.customer_email}</div>`:''}
+          </td>
+          <td class="px-6 py-4 font-semibold">Table ${r.tables?.table_number||'?'}</td>
+          <td class="px-6 py-4">
+            <div class="font-semibold">${new Date(r.reservation_date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+            <div class="text-slate-500 text-xs">${r.reservation_time || r.time_slot}</div>
+          </td>
+          <td class="px-6 py-4"><span class="font-bold">👥 ${r.guest_count}</span></td>
+          <td class="px-6 py-4"><span class="badge badge-${r.status}">${r.status}</span></td>
+          <td class="px-6 py-4">
+            ${r.status==='confirmed' ? `
+              <div class="flex gap-2">
+                <button onclick="updateRes('${r.id}','completed')" class="rounded-lg bg-green-100 text-green-700 px-3 py-1.5 text-xs font-bold hover:bg-green-200 transition-colors flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">check</span> Done
+                </button>
+                <button onclick="updateRes('${r.id}','cancelled')" class="rounded-lg bg-red-100 text-red-600 px-3 py-1.5 text-xs font-bold hover:bg-red-200 transition-colors flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">close</span> Cancel
+                </button>
+              </div>` : '<span class="text-slate-400 text-xs">—</span>'}
+          </td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  }
+
+  async function updateRes(id, status) {
+    if (status==='cancelled' && !confirm('Cancel this reservation?')) return;
+    await fetch(`${CONFIG.API_URL}/reservations/${id}`,{method:'PUT',headers:H,body:JSON.stringify({status})});
+    showToast(`Reservation ${status}`,'success'); loadReservations();
+  }
+
+  function showToast(msg,type='') {
+    const el=document.createElement('div'); el.className=`toast ${type}`; el.textContent=msg;
+    document.getElementById('toastContainer').appendChild(el); setTimeout(()=>el.remove(),2500);
+  }
+
+  loadReservations();
+</script>
+</body>
+</html>

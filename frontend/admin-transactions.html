@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fin Ledger — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#5d4037'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:#f7f7f6; }
+
+/* Sidebar */
+.sidenav { width:220px; min-width:220px; background:#fff; border-right:1px solid rgba(93,64,55,.08); display:flex; flex-direction:column; height:100vh; }
+.nav-item { display:flex; align-items:center; gap:10px; padding:9px 14px; border-radius:8px; font-size:.825rem; font-weight:600; color:rgba(93,64,55,.55); transition:all .18s; text-decoration:none; }
+.nav-item:hover { background:rgba(93,64,55,.05); color:#5d4037; }
+.nav-item.active { background:#5d4037; color:#fff; box-shadow:0 3px 10px rgba(93,64,55,.22); }
+.nav-item .material-symbols-outlined { font-size:1rem; }
+
+/* Stat cards */
+.stat-card { background:#fff; border:1px solid rgba(93,64,55,.09); border-radius:14px; padding:20px 22px; box-shadow:0 1px 4px rgba(0,0,0,.05); }
+
+/* Method pills */
+.pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:7px; font-size:.68rem; font-weight:800; white-space:nowrap; }
+.pill-upi  { background:rgba(93,64,55,.1);  color:#5d4037; }
+.pill-card { background:rgba(37,99,235,.07); color:#1d4ed8; }
+.pill-cash { background:rgba(234,88,12,.07); color:#c2410c; }
+
+/* Status pills */
+.spill { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.67rem; font-weight:800; }
+.sp-success    { background:#dcfce7; color:#166534; }
+.sp-processing { background:#fef3c7; color:#92400e; }
+.sp-declined   { background:#fee2e2; color:#991b1b; }
+.sdot { width:6px; height:6px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.sd-green  { background:#16a34a; }
+.sd-amber  { background:#d97706; }
+.sd-red    { background:#dc2626; }
+
+/* Table */
+.tx-row td { padding:12px 18px; font-size:.82rem; transition:background .12s; }
+.tx-row:hover td { background:rgba(93,64,55,.018); cursor:pointer; }
+th { padding:10px 18px; font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:rgba(93,64,55,.5); background:rgba(93,64,55,.025); }
+
+/* Tab bar */
+.tab-btn { padding:13px 14px; font-size:.82rem; font-weight:700; border-bottom:2px solid transparent; color:rgba(93,64,55,.4); background:none; border-top:none; border-left:none; border-right:none; cursor:pointer; transition:all .2s; white-space:nowrap; }
+.tab-btn.active { color:#5d4037; border-bottom-color:#5d4037; }
+.tab-btn:hover:not(.active) { color:#5d4037; }
+
+/* Detail panel */
+.detail-wrap { position:fixed; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(4px); z-index:300; display:none; justify-content:flex-end; }
+.detail-wrap.open { display:flex; }
+.detail-panel { background:#fff; width:340px; height:100%; overflow-y:auto; animation:slideR .28s ease; box-shadow:-12px 0 40px rgba(0,0,0,.1); }
+@keyframes slideR { from{transform:translateX(100%)} to{transform:translateX(0)} }
+</style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidenav flex-shrink-0">
+  <!-- Brand -->
+  <div class="px-4 py-4 border-b border-slate-100 flex items-center gap-2.5">
+    <div class="h-8 w-8 rounded-lg bg-[#5d4037] flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-sm">account_balance_wallet</span>
+    </div>
+    <span class="font-black text-slate-900 text-sm tracking-tight">Fin Ledger</span>
+  </div>
+
+  <!-- Profile chip -->
+  <div class="px-4 py-3.5 border-b border-slate-100 flex items-center gap-2.5">
+    <div class="h-9 w-9 rounded-lg bg-[#5d4037]/10 flex items-center justify-center text-[#5d4037] shrink-0">
+      <span class="material-symbols-outlined text-base">admin_panel_settings</span>
+    </div>
+    <div class="min-w-0">
+      <div class="text-xs font-bold text-slate-800 truncate">Finance Admin</div>
+      <div class="text-[10px] text-[#5d4037]/60 font-semibold">System Operator</div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+    <a href="admin-dashboard.html" class="nav-item">
+      <span class="material-symbols-outlined">dashboard</span> Dashboard
+    </a>
+    <a href="admin-transactions.html" class="nav-item active">
+      <span class="material-symbols-outlined">receipt_long</span> Transactions
+    </a>
+    <a href="admin-reservations.html" class="nav-item">
+      <span class="material-symbols-outlined">group</span> Customers
+    </a>
+    <a href="admin-analytics.html" class="nav-item">
+      <span class="material-symbols-outlined">payments</span> Analytics
+    </a>
+    <div class="pt-3 pb-1 px-1 text-[9px] text-[#5d4037]/30 font-black uppercase tracking-widest">Operations</div>
+    <a href="admin-menu.html" class="nav-item">
+      <span class="material-symbols-outlined">restaurant_menu</span> Menu
+    </a>
+    <a href="admin-tables.html" class="nav-item">
+      <span class="material-symbols-outlined">table_bar</span> Tables
+    </a>
+    <a href="kitchen.html" class="nav-item">
+      <span class="material-symbols-outlined">local_fire_department</span> Kitchen
+    </a>
+    <a href="admin-notifications.html" class="nav-item">
+      <span class="material-symbols-outlined">mail</span> Notifications
+    </a>
+    <div class="pt-3"></div>
+    <a href="#" class="nav-item">
+      <span class="material-symbols-outlined">settings</span> Settings
+    </a>
+  </nav>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- Top bar -->
+  <header class="bg-[#f7f7f6] border-b border-slate-200/60 px-6 py-2.5 flex items-center justify-between shrink-0 z-40">
+    <div class="flex items-center gap-2.5">
+      <div class="h-7 w-7 rounded-lg bg-[#5d4037] flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm">account_balance_wallet</span>
+      </div>
+      <span class="font-black text-slate-900 text-sm">Fin Ledger</span>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <!-- Search -->
+      <div class="relative hidden md:block">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#5d4037]/40 text-sm">search</span>
+        <input id="searchInput" oninput="applyFilter()" placeholder="Search transactions…"
+          class="rounded-xl border border-[#5d4037]/15 bg-white pl-8 pr-3 py-2 text-xs focus:border-[#5d4037]/40 focus:outline-none w-52">
+      </div>
+      <!-- Export -->
+      <button onclick="exportCSV()" title="Download CSV"
+        class="h-8 w-8 rounded-xl bg-[#5d4037]/8 text-[#5d4037] flex items-center justify-center hover:bg-[#5d4037]/15 transition-colors border border-[#5d4037]/10">
+        <span class="material-symbols-outlined text-sm">download</span>
+      </button>
+      <!-- Filter -->
+      <button class="h-8 w-8 rounded-xl bg-[#5d4037]/8 text-[#5d4037] flex items-center justify-center hover:bg-[#5d4037]/15 transition-colors border border-[#5d4037]/10">
+        <span class="material-symbols-outlined text-sm">filter_list</span>
+      </button>
+      <!-- Avatar -->
+      <div class="h-8 w-8 rounded-full bg-[#5d4037] flex items-center justify-center text-white text-xs font-black">FA</div>
+    </div>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="flex-1 overflow-y-auto">
+    <div class="px-6 py-5 space-y-5 max-w-6xl">
+
+      <!-- ── Stats Row ── -->
+      <div class="grid grid-cols-3 gap-4">
+        <div class="stat-card">
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-bold text-[#5d4037]/55 uppercase tracking-wide">Total Sales</span>
+            <span class="material-symbols-outlined text-[#5d4037]/25 text-lg">trending_up</span>
+          </div>
+          <div id="statTotal" class="text-2xl font-black text-slate-900 mb-1.5">—</div>
+          <div class="text-green-600 text-xs font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">arrow_upward</span> 12.5% vs last month
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-bold text-[#5d4037]/55 uppercase tracking-wide">Avg. Transaction</span>
+            <span class="material-symbols-outlined text-[#5d4037]/25 text-lg">bar_chart</span>
+          </div>
+          <div id="statAvg" class="text-2xl font-black text-slate-900 mb-1.5">—</div>
+          <div class="text-green-600 text-xs font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">arrow_upward</span> 3.1% vs last month
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-start justify-between mb-2">
+            <span class="text-xs font-bold text-[#5d4037]/55 uppercase tracking-wide">Success Rate</span>
+            <span class="material-symbols-outlined text-[#5d4037]/25 text-lg">check_circle</span>
+          </div>
+          <div id="statRate" class="text-2xl font-black text-slate-900 mb-1.5">—</div>
+          <div class="text-red-500 text-xs font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-xs">arrow_downward</span> 0.5% vs last month
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Transaction Table ── -->
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+
+        <!-- Tab bar -->
+        <div class="flex border-b border-slate-100 px-4 overflow-x-auto scrollbar-hide">
+          <button class="tab-btn active" onclick="switchTab('all',this)">All Transactions</button>
+          <button class="tab-btn" onclick="switchTab('upi',this)">UPI</button>
+          <button class="tab-btn" onclick="switchTab('cash',this)">Cash</button>
+          <button class="tab-btn" onclick="switchTab('card',this)">Card</button>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Timestamp</th>
+                <th>Method</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="txBody" class="divide-y divide-[#5d4037]/[0.05]">
+              <tr><td colspan="6" class="py-10 text-center"><div class="spinner" style="margin:0 auto;width:28px;height:28px;"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100">
+          <p id="pageInfo" class="text-xs text-[#5d4037]/50 font-medium"></p>
+          <div class="flex gap-2">
+            <button onclick="changePage(-1)"
+              class="px-4 py-1.5 text-xs font-bold border border-[#5d4037]/20 rounded-lg text-[#5d4037] hover:bg-[#5d4037]/5 transition-colors">
+              Previous
+            </button>
+            <button onclick="changePage(1)"
+              class="px-4 py-1.5 text-xs font-bold bg-[#5d4037] text-white rounded-lg hover:bg-[#4b3832] transition-colors">
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ════════════ DETAIL PANEL ════════════ -->
+<div id="detailWrap" class="detail-wrap">
+  <div class="detail-panel">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
+      <div class="font-black text-slate-900 text-sm">Transaction Detail</div>
+      <button onclick="closeDetail()"
+        class="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-slate-200">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+    </div>
+    <div id="detailBody" class="p-5 space-y-4"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+// ── Auth guard ──
+const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+const H     = { 'x-admin-token': token };
+
+// ── Payment methods assigned round-robin ──
+const METHODS = ['UPI','Card','Cash','UPI','Card','Cash','UPI','Cash','Card','UPI'];
+
+let allOrders = [], filtered = [], currentTab = 'all', page = 1, perPage = 8;
+
+// ── Load ──
+async function loadData() {
+  try {
+    const orders = await fetch(`${CONFIG.API_URL}/orders`, { headers: H }).then(r => r.json());
+    allOrders = orders.map((o, i) => ({ ...o, payMethod: METHODS[i % METHODS.length] }));
+    computeStats();
+    applyFilter();
+  } catch(e) {
+    document.getElementById('txBody').innerHTML =
+      `<tr><td colspan="6" class="py-8 text-center text-slate-400 text-sm">Could not load transactions</td></tr>`;
+  }
+}
+
+function computeStats() {
+  const total   = allOrders.reduce((s, o) => s + parseFloat(o.total_amount || 0), 0);
+  const avg     = allOrders.length ? total / allOrders.length : 0;
+  const success = allOrders.filter(o => ['served','ready'].includes(o.status)).length;
+  const rate    = allOrders.length ? ((success / allOrders.length) * 100).toFixed(1) : 0;
+  document.getElementById('statTotal').textContent = `₹${total.toFixed(2)}`;
+  document.getElementById('statAvg').textContent   = `₹${avg.toFixed(2)}`;
+  document.getElementById('statRate').textContent  = `${rate}%`;
+}
+
+function applyFilter() {
+  const q = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  filtered = allOrders.filter(o => {
+    const tabMatch = currentTab === 'all' || o.payMethod.toLowerCase() === currentTab;
+    const qMatch   = !q ||
+      o.id.toLowerCase().includes(q) ||
+      (o.customer_name || '').toLowerCase().includes(q) ||
+      o.payMethod.toLowerCase().includes(q) ||
+      o.status.toLowerCase().includes(q);
+    return tabMatch && qMatch;
+  });
+  page = 1;
+  renderTable();
+}
+
+// ── Render ──
+const methodCfg = {
+  UPI:  { cls:'pill-upi',  icon:'qr_code_2',  label:'UPI'  },
+  Card: { cls:'pill-card', icon:'credit_card', label:'Card' },
+  Cash: { cls:'pill-cash', icon:'payments',    label:'Cash' },
+};
+const statusCfg = {
+  served:    { cls:'sp-success',    dot:'sd-green', label:'Success'    },
+  ready:     { cls:'sp-processing', dot:'sd-amber', label:'Processing' },
+  preparing: { cls:'sp-processing', dot:'sd-amber', label:'Processing' },
+  placed:    { cls:'sp-processing', dot:'sd-amber', label:'Pending'    },
+};
+
+function renderTable() {
+  const start  = (page - 1) * perPage;
+  const slice  = filtered.slice(start, start + perPage);
+  const tbody  = document.getElementById('txBody');
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400 text-sm">No transactions found</td></tr>`;
+    document.getElementById('pageInfo').textContent = '';
+    return;
+  }
+
+  tbody.innerHTML = slice.map(o => {
+    const m  = methodCfg[o.payMethod] || methodCfg.Cash;
+    const st = statusCfg[o.status]   || statusCfg.placed;
+    const ts = new Date(o.created_at).toLocaleString('en-IN', {
+      month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+    });
+    return `
+      <tr class="tx-row" onclick="openDetail('${o.id}')">
+        <td class="font-bold text-slate-900">#ORD-${o.id.slice(-4).toUpperCase()}</td>
+        <td class="text-[#5d4037]/55">${ts}</td>
+        <td>
+          <span class="pill ${m.cls}">
+            <span class="material-symbols-outlined" style="font-size:.8rem">${m.icon}</span>
+            ${m.label}
+          </span>
+        </td>
+        <td class="text-[#5d4037]/70 font-medium">${o.customer_name || 'Guest'}</td>
+        <td class="font-black text-slate-900">₹${parseFloat(o.total_amount).toFixed(2)}</td>
+        <td>
+          <span class="spill ${st.cls}">
+            <span class="sdot ${st.dot}"></span> ${st.label}
+          </span>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('pageInfo').textContent =
+    `Showing ${start + 1} to ${Math.min(start + perPage, filtered.length)} of ${filtered.length} transactions`;
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = tab;
+  applyFilter();
+}
+
+function changePage(dir) {
+  const max = Math.ceil(filtered.length / perPage);
+  page = Math.min(Math.max(1, page + dir), max || 1);
+  renderTable();
+}
+
+// ── Detail Panel ──
+function openDetail(id) {
+  const o  = allOrders.find(x => x.id === id);
+  if (!o) return;
+  const m  = methodCfg[o.payMethod] || methodCfg.Cash;
+  const st = statusCfg[o.status]   || statusCfg.placed;
+  const items = (o.order_items || []).map(it => `
+    <div class="flex justify-between py-1.5 text-sm border-b border-slate-50 last:border-none">
+      <span class="text-slate-600">${it.quantity}× ${it.menu_items?.name || 'Item'}</span>
+      <span class="font-bold text-slate-800">₹${(it.price * it.quantity).toFixed(2)}</span>
+    </div>`).join('');
+
+  const sub   = parseFloat(o.subtotal   || o.total_amount) || 0;
+  const tax   = parseFloat(o.tax_amount || +(sub * 0.09).toFixed(2));
+
+  document.getElementById('detailBody').innerHTML = `
+    <!-- Order ID -->
+    <div>
+      <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Order ID</div>
+      <div class="text-base font-black text-slate-900">#ORD-${o.id.slice(-4).toUpperCase()}</div>
+    </div>
+
+    <!-- Meta grid -->
+    <div class="grid grid-cols-2 gap-2.5">
+      <div class="bg-slate-50 rounded-xl p-3">
+        <div class="text-[9px] font-black text-slate-400 uppercase mb-0.5">Customer</div>
+        <div class="font-bold text-slate-800 text-sm">${o.customer_name || 'Guest'}</div>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <div class="text-[9px] font-black text-slate-400 uppercase mb-0.5">Table</div>
+        <div class="font-bold text-slate-800 text-sm">Table ${o.tables?.table_number || '—'}</div>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <div class="text-[9px] font-black text-slate-400 uppercase mb-1">Payment</div>
+        <span class="pill ${m.cls}">
+          <span class="material-symbols-outlined" style="font-size:.75rem">${m.icon}</span> ${m.label}
+        </span>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        <div class="text-[9px] font-black text-slate-400 uppercase mb-1">Status</div>
+        <span class="spill ${st.cls}">
+          <span class="sdot ${st.dot}"></span> ${st.label}
+        </span>
+      </div>
+    </div>
+
+    <!-- Items -->
+    <div>
+      <div class="text-[10px] font-black text-slate-400 uppercase mb-2">Order Items</div>
+      <div class="bg-slate-50 rounded-xl p-3">
+        ${items || '<p class="text-sm text-slate-400">No items</p>'}
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="bg-[#5d4037]/5 rounded-xl p-4 border border-[#5d4037]/10 space-y-1.5">
+      <div class="flex justify-between text-xs text-slate-500"><span>Subtotal</span><span>₹${sub.toFixed(2)}</span></div>
+      <div class="flex justify-between text-xs text-slate-500"><span>Service Tax (9%)</span><span>₹${tax.toFixed(2)}</span></div>
+      <div class="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-[#5d4037]/10">
+        <span>Grand Total</span><span>₹${parseFloat(o.total_amount || sub + tax).toFixed(2)}</span>
+      </div>
+    </div>
+
+    <div class="text-[10px] text-slate-400 text-center">${new Date(o.created_at).toLocaleString()}</div>
+
+    <!-- Action buttons -->
+    <div class="grid grid-cols-2 gap-2">
+      <button onclick="showToast('📧 Receipt sent','success')"
+        class="py-2.5 rounded-xl bg-[#5d4037] text-white text-xs font-bold hover:bg-[#4b3832] transition-colors flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">mail</span> Email Receipt
+      </button>
+      <button onclick="closeDetail()"
+        class="py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors">
+        Close
+      </button>
+    </div>
+  `;
+  document.getElementById('detailWrap').classList.add('open');
+}
+function closeDetail() { document.getElementById('detailWrap').classList.remove('open'); }
+
+// ── Export CSV ──
+function exportCSV() {
+  const rows = [['Order ID','Date','Method','Customer','Amount','Status'],
+    ...filtered.map(o => [
+      `ORD-${o.id.slice(-4).toUpperCase()}`,
+      new Date(o.created_at).toLocaleString(),
+      o.payMethod,
+      o.customer_name || 'Guest',
+      parseFloat(o.total_amount).toFixed(2),
+      o.status
+    ])
+  ];
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'));
+  a.download = 'smart-cafe-transactions.csv';
+  a.click();
+  showToast('📥 Transactions exported', 'success');
+}
+
+function showToast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`; el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+loadData();
+</script>
+</body>
+</html>

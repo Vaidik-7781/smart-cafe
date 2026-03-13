@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Role-Based Login — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#5d4037'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:#f7f7f6; min-height:100vh; display:flex; flex-direction:column; }
+
+.role-group { display:grid; grid-template-columns:repeat(3,1fr); background:rgba(93,64,55,.07); border-radius:12px; padding:4px; gap:0; }
+.role-btn { padding:10px 6px; border-radius:9px; font-size:.78rem; font-weight:700; border:none; background:transparent; color:rgba(93,64,55,.5); cursor:pointer; transition:all .22s; display:flex; align-items:center; justify-content:center; gap:5px; }
+.role-btn.active { background:#fff; color:#5d4037; box-shadow:0 2px 8px rgba(93,64,55,.15); }
+.role-btn:not(.active):hover { color:#5d4037; }
+
+.field-group { position:relative; }
+.f-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:1.1rem; pointer-events:none; line-height:1; }
+.f-input { width:100%; padding:12px 14px 12px 38px; background:#fff; border:1.5px solid #e8e2de; border-radius:12px; font-size:.875rem; font-family:'Work Sans',sans-serif; outline:none; transition:border-color .2s; }
+.f-input:focus { border-color:#5d4037; box-shadow:0 0 0 3px rgba(93,64,55,.08); }
+.f-input::placeholder { color:#b0a8a3; }
+
+.submit-btn { width:100%; background:#5d4037; color:#fff; border:none; border-radius:12px; padding:14px; font-size:.875rem; font-weight:800; font-family:'Work Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 16px rgba(93,64,55,.28); transition:all .2s; }
+.submit-btn:hover:not(:disabled) { background:#4b3832; transform:translateY(-1px); box-shadow:0 6px 20px rgba(93,64,55,.33); }
+.submit-btn:disabled { opacity:.65; cursor:not-allowed; }
+
+.divider { display:flex; align-items:center; gap:10px; color:#94a3b8; font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; }
+.divider::before, .divider::after { content:''; flex:1; height:1px; background:#e8e2de; }
+
+.social-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 8px; border:1.5px solid #e8e2de; border-radius:12px; background:#fff; font-size:.8rem; font-weight:700; color:#475569; cursor:pointer; font-family:'Work Sans',sans-serif; transition:all .18s; }
+.social-btn:hover { border-color:#5d4037; color:#5d4037; background:#faf8f5; }
+
+/* Hero */
+.hero-side { position:relative; overflow:hidden; border-radius:18px; background:linear-gradient(155deg,#3e2723,#5d4037,#795548); min-height:440px; display:flex; align-items:flex-end; }
+.hero-blur-1 { position:absolute; top:-20%; right:-10%; width:260px; height:260px; border-radius:50%; background:rgba(188,143,100,.18); filter:blur(60px); }
+.hero-blur-2 { position:absolute; bottom:10%; left:-5%;  width:200px; height:200px; border-radius:50%; background:rgba(93,64,55,.4);  filter:blur(50px); }
+.hero-grid   { position:absolute; inset:0; background-image:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,.02) 40px,rgba(255,255,255,.02) 41px), repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,255,255,.02) 40px,rgba(255,255,255,.02) 41px); }
+/* Kitchen illustration */
+.kitchen-art { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="border-b border-[#5d4037]/10 px-6 md:px-16 py-3.5 flex items-center justify-between bg-[#f7f7f6] sticky top-0 z-50">
+  <div class="flex items-center gap-2.5">
+    <div class="h-8 w-8 rounded-lg bg-[#5d4037] flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-sm">restaurant</span>
+    </div>
+    <span class="font-black text-slate-900 text-base tracking-tight">ProKitchen</span>
+  </div>
+  <button class="px-4 py-1.5 rounded-lg border border-[#5d4037]/20 text-[#5d4037] text-sm font-bold hover:bg-[#5d4037]/5 transition-colors">
+    Help
+  </button>
+</header>
+
+<!-- Main -->
+<main class="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
+  <div class="w-full max-w-[900px] grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+
+    <!-- Hero panel -->
+    <div class="hero-side">
+      <div class="hero-blur-1"></div>
+      <div class="hero-blur-2"></div>
+      <div class="hero-grid"></div>
+
+      <!-- Decorative kitchen illustration -->
+      <div class="kitchen-art opacity-20">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:20px;">
+          <div style="width:60px;height:80px;background:rgba(255,255,255,.3);border-radius:10px;"></div>
+          <div style="width:60px;height:100px;background:rgba(255,255,255,.2);border-radius:10px;margin-top:-10px;"></div>
+          <div style="width:60px;height:70px;background:rgba(255,255,255,.25);border-radius:10px;margin-top:5px;"></div>
+          <div style="width:60px;height:50px;background:rgba(255,255,255,.15);border-radius:10px;"></div>
+          <div style="width:60px;height:90px;background:rgba(255,255,255,.2);border-radius:10px;margin-top:-15px;"></div>
+          <div style="width:60px;height:60px;background:rgba(255,255,255,.3);border-radius:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Central icon -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-65%);text-align:center;">
+        <div style="width:72px;height:72px;border-radius:18px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+          <span class="material-symbols-outlined text-white" style="font-size:2rem;">restaurant</span>
+        </div>
+      </div>
+
+      <!-- Bottom text -->
+      <div class="relative z-10 p-8 pb-10 w-full">
+        <h1 class="text-white text-3xl font-black leading-tight mb-2">Welcome Back</h1>
+        <p class="text-white/65 text-sm leading-relaxed mb-5">
+          Manage your culinary operations with precision and ease. Access your dashboard below.
+        </p>
+        <!-- Live mini stats -->
+        <div class="flex gap-3">
+          <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;">
+            <div id="liveOrders" class="text-white font-black text-lg leading-none mb-0.5">—</div>
+            <div class="text-white/50 text-[9px] font-bold uppercase tracking-widest">Active Orders</div>
+          </div>
+          <div style="background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px 16px;">
+            <div id="liveTables" class="text-white font-black text-lg leading-none mb-0.5">—</div>
+            <div class="text-white/50 text-[9px] font-bold uppercase tracking-widest">Occupied Tables</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form card -->
+    <div class="bg-[#f7f7f6] flex flex-col gap-5 py-1">
+      <div>
+        <h2 class="text-2xl font-black text-slate-900 mb-1">Role-Based Login</h2>
+        <p class="text-sm text-slate-500">Select your workspace and enter your credentials.</p>
+      </div>
+
+      <!-- Role tabs -->
+      <div class="role-group">
+        <button class="role-btn active" id="btn-customer" onclick="selectRole('customer')">
+          <span class="material-symbols-outlined text-sm">person</span> Customer
+        </button>
+        <button class="role-btn" id="btn-kitchen" onclick="selectRole('kitchen')">
+          <span class="material-symbols-outlined text-sm">local_fire_department</span> Kitchen
+        </button>
+        <button class="role-btn" id="btn-admin" onclick="selectRole('admin')">
+          <span class="material-symbols-outlined text-sm">admin_panel_settings</span> Admin
+        </button>
+      </div>
+
+      <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+
+        <!-- Email field -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5" id="emailLabel">Email Address</label>
+          <div class="field-group">
+            <span class="material-symbols-outlined f-icon" id="emailIcon">mail</span>
+            <input id="emailInput" type="text" class="f-input" placeholder="chef@prokitchen.com">
+          </div>
+        </div>
+
+        <!-- Password field -->
+        <div>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="text-xs font-bold text-slate-700" id="passLabel">Password</label>
+            <a href="#" class="text-xs font-bold text-[#5d4037] hover:underline">Forgot?</a>
+          </div>
+          <div class="field-group">
+            <span class="material-symbols-outlined f-icon">lock</span>
+            <input id="passInput" type="password" class="f-input" style="padding-right:42px" placeholder="••••••••">
+            <button type="button" onclick="togglePass()"
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:2px;">
+              <span class="material-symbols-outlined text-slate-400 text-base" id="eyeIcon">visibility_off</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember -->
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="remember" class="h-4 w-4 rounded border-slate-300 text-[#5d4037] focus:ring-[#5d4037]">
+          <span class="text-xs text-slate-500 font-medium">Remember this device</span>
+        </label>
+
+        <button type="submit" id="submitBtn" class="submit-btn">
+          <span id="btnTxt">Sign In to Dashboard</span>
+          <span class="material-symbols-outlined text-base" id="btnIco">arrow_forward</span>
+        </button>
+      </form>
+
+      <div class="divider">Or continue with</div>
+
+      <div class="flex gap-3">
+        <button class="social-btn" onclick="showToast('Google SSO not yet configured')">
+          <svg width="15" height="15" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Google
+        </button>
+        <button class="social-btn" onclick="showToast('SSO integration coming soon')">
+          <span class="material-symbols-outlined text-base text-[#5d4037]">grid_view</span> SSO
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-slate-400">
+        Don't have an account?
+        <a href="#" class="text-[#5d4037] font-bold hover:underline">Contact Support</a>
+      </p>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-[#5d4037]/8 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400">
+  <p>© 2024 ProKitchen Systems Inc. All rights reserved.</p>
+  <div class="flex gap-5">
+    <a href="#" class="hover:text-[#5d4037] transition-colors">Privacy Policy</a>
+    <a href="#" class="hover:text-[#5d4037] transition-colors">Terms of Service</a>
+    <a href="#" class="hover:text-[#5d4037] transition-colors">System Status</a>
+  </div>
+</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+let role = 'customer';
+
+const ROLES = {
+  customer: { eLabel:'Table Number or Name', eIcon:'table_bar', ePH:'e.g. Table 12 or Your Name', pLabel:'Order PIN (optional)', pPH:'Leave blank to browse', to:'menu.html' },
+  kitchen:  { eLabel:'Staff Email',          eIcon:'mail',      ePH:'kitchen@smartcafe.com',        pLabel:'Kitchen Access Token', pPH:'Enter kitchen token',  to:'kitchen.html' },
+  admin:    { eLabel:'Admin Email',           eIcon:'mail',      ePH:'admin@smartcafe.com',          pLabel:'Admin Token',          pPH:'Enter admin token',    to:'admin-dashboard.html' },
+};
+
+function selectRole(r) {
+  role = r;
+  ['customer','kitchen','admin'].forEach(x => document.getElementById(`btn-${x}`).classList.toggle('active', x===r));
+  const c = ROLES[r];
+  document.getElementById('emailLabel').textContent  = c.eLabel;
+  document.getElementById('emailIcon').textContent   = c.eIcon;
+  document.getElementById('emailInput').placeholder  = c.ePH;
+  document.getElementById('passLabel').textContent   = c.pLabel;
+  document.getElementById('passInput').placeholder   = c.pPH;
+}
+
+function togglePass() {
+  const i = document.getElementById('passInput');
+  const e = document.getElementById('eyeIcon');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  e.textContent = i.type === 'password' ? 'visibility_off' : 'visibility';
+}
+
+async function handleLogin(ev) {
+  ev.preventDefault();
+  const email = document.getElementById('emailInput').value.trim();
+  const pass  = document.getElementById('passInput').value.trim();
+  const btn   = document.getElementById('submitBtn');
+  const txt   = document.getElementById('btnTxt');
+  const ico   = document.getElementById('btnIco');
+
+  btn.disabled = true; txt.textContent = 'Signing in…'; ico.textContent = 'hourglass_empty';
+
+  // Customer doesn't need auth
+  if (role === 'customer') {
+    if (email) { localStorage.setItem('customerName', email); localStorage.setItem('tableNum', email); }
+    showToast('Welcome! Redirecting…', 'success');
+    setTimeout(() => window.location.href = ROLES.customer.to, 900);
+    return;
+  }
+
+  // Staff: verify token
+  const t = pass || CONFIG.ADMIN_TOKEN;
+  try {
+    const r = await fetch(`${CONFIG.API_URL}/analytics/daily-sales`, { headers:{'x-admin-token':t} });
+    if (r.ok) {
+      sessionStorage.setItem('adminToken', t);
+      sessionStorage.setItem('adminRole', role);
+      showToast('✅ Access granted!', 'success');
+      setTimeout(() => window.location.href = ROLES[role].to, 800);
+    } else {
+      showToast('❌ Invalid credentials', 'error');
+      btn.disabled=false; txt.textContent='Sign In to Dashboard'; ico.textContent='arrow_forward';
+    }
+  } catch {
+    showToast('⚠️ Server unreachable', 'error');
+    btn.disabled=false; txt.textContent='Sign In to Dashboard'; ico.textContent='arrow_forward';
+  }
+}
+
+async function loadLive() {
+  try {
+    const t = await fetch(`${CONFIG.API_URL}/tables`).then(r=>r.json());
+    document.getElementById('liveTables').textContent = t.filter(x=>x.status==='occupied').length;
+  } catch {}
+  try {
+    const o = await fetch(`${CONFIG.API_URL}/kitchen/orders`).then(r=>r.json());
+    document.getElementById('liveOrders').textContent = (o||[]).length;
+  } catch {}
+}
+
+function showToast(m,t=''){const e=document.createElement('div');e.className=`toast ${t}`;e.textContent=m;document.getElementById('toastContainer').appendChild(e);setTimeout(()=>e.remove(),3500);}
+loadLive();
+</script>
+</body>
+</html>

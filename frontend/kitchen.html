@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Kitchen Dashboard — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#4b3832'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family: 'Work Sans', sans-serif; background:#f5f4f0; }
+
+.tab-pill { padding:7px 16px; border-radius:20px; font-size:.8rem; font-weight:700; color:#64748b; background:transparent; border:none; cursor:pointer; transition:all .2s; }
+.tab-pill.active { background:#fff; color:#1e293b; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+
+.order-card {
+  background:#fff; border-radius:16px;
+  border:1.5px solid #e2e8f0;
+  padding:18px; margin-bottom:14px;
+  transition:all .25s;
+  animation:cardIn .3s cubic-bezier(.22,.68,0,1.2);
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+.order-card:hover { border-color:#cbd5e1; box-shadow:0 4px 16px rgba(0,0,0,.07); }
+.order-card.urgent { border-left:4px solid #ef4444; border-color:#ef4444; background:#fffbfb; }
+.order-card.preparing { border-left:4px solid #f59e0b; }
+.order-card.new { border-left:4px solid #22c55e; }
+
+.label-chip { font-size:.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; padding:2px 7px; border-radius:10px; }
+.label-urgent    { color:#dc2626; background:#fee2e2; }
+.label-preparing { color:#d97706; background:#fef3c7; }
+.label-new       { color:#16a34a; background:#dcfce7; }
+.label-delayed   { color:#b91c1c; background:#fee2e2; }
+.label-progress  { color:#1d4ed8; background:#dbeafe; }
+.label-watch     { color:#d97706; background:#fef9c3; }
+
+.item-row { display:flex; align-items:flex-start; gap:10px; padding:5px 0; border-bottom:1px solid #f1f5f9; }
+.item-row:last-child { border:none; }
+.item-qty { font-size:.8rem; font-weight:800; color:#fff; background:#4b3832; border-radius:6px; padding:0 7px; min-width:28px; text-align:center; line-height:22px; shrink-0; }
+
+.action-primary { background:#4b3832; color:#fff; border:none; border-radius:10px; padding:12px; width:100%; font-weight:700; font-size:.875rem; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px; }
+.action-primary:hover { background:#3d2b1f; transform:translateY(-1px); }
+.action-primary.green { background:#16a34a; }
+.action-primary.green:hover { background:#15803d; }
+
+.bottom-stat { font-size:.75rem; color:#64748b; font-weight:600; }
+.bottom-stat strong { color:#1e293b; font-weight:800; }
+
+.progress-bar { height:3px; background:#e2e8f0; border-radius:2px; margin-top:4px; overflow:hidden; }
+.progress-fill { height:100%; background:#f59e0b; border-radius:2px; animation:fillAnim 1s ease; }
+@keyframes fillAnim { from{width:0} }
+</style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+<!-- Top Header -->
+<header class="bg-white border-b border-slate-100 px-6 py-3.5 flex items-center gap-4 shrink-0">
+  <div class="flex items-center gap-3">
+    <div class="h-9 w-9 rounded-xl bg-[#4b3832] flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-base">restaurant</span>
+    </div>
+    <div>
+      <div class="font-black text-slate-900 text-base leading-none">Live Kitchen</div>
+      <div class="text-slate-400 text-[10px] font-semibold uppercase tracking-wide">Station: Main Grill</div>
+    </div>
+  </div>
+
+  <div class="flex-1 max-w-md">
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-base">search</span>
+      <input placeholder="Search orders, items or tables…"
+        class="w-full rounded-xl bg-slate-50 border border-slate-200 pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none">
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3 ml-auto">
+    <div id="delayedBadge" class="hidden items-center gap-2 rounded-full bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 text-xs font-bold">
+      <span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
+      <span id="delayedCount">0</span> Delayed
+    </div>
+    <button class="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500">
+      <span class="material-symbols-outlined text-base">notifications</span>
+    </button>
+    <div class="h-9 w-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+      <span class="material-symbols-outlined text-base">person</span>
+    </div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="bg-white border-b border-slate-100 px-6 py-2 flex items-center justify-between shrink-0">
+  <div class="flex bg-slate-100 p-1 rounded-2xl gap-1">
+    <button class="tab-pill active" id="tab-active" onclick="switchTab('placed')">Active (<span id="cnt-placed">0</span>)</button>
+    <button class="tab-pill" id="tab-preparing" onclick="switchTab('preparing')">Preparing (<span id="cnt-preparing">0</span>)</button>
+    <button class="tab-pill" id="tab-ready" onclick="switchTab('ready')">Ready (<span id="cnt-ready">0</span>)</button>
+    <button class="tab-pill" id="tab-history" onclick="switchTab('served')">History</button>
+  </div>
+  <div class="flex items-center gap-4 text-xs font-bold text-slate-500">
+    <div class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-red-500"></span> Urgent</div>
+    <div class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-amber-500"></span> Preparing</div>
+    <div class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-green-500"></span> New</div>
+  </div>
+</div>
+
+<!-- Kanban columns -->
+<div class="flex-1 overflow-hidden flex">
+  <div id="kanbanBoard" class="flex-1 overflow-y-auto p-5">
+    <div class="flex justify-center py-16"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- Bottom stats bar -->
+<footer class="bg-white border-t border-slate-100 px-6 py-3 flex items-center justify-between shrink-0">
+  <div class="flex items-center gap-8">
+    <div class="bottom-stat">Avg. Prep Time <strong id="avgPrep">—</strong></div>
+    <div class="bottom-stat">Orders Today <strong id="ordersToday">—</strong></div>
+    <div class="bottom-stat">Efficiency <strong id="efficiency" class="text-green-600">—</strong></div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="flex -space-x-2">
+      <div class="h-8 w-8 rounded-full bg-[#4b3832] border-2 border-white text-white text-xs font-bold flex items-center justify-center">K</div>
+      <div class="h-8 w-8 rounded-full bg-slate-400 border-2 border-white text-white text-xs font-bold flex items-center justify-center">C</div>
+    </div>
+    <button class="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900">
+      <span class="material-symbols-outlined text-sm">group</span> Manage Team
+    </button>
+  </div>
+</footer>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+let allOrders = [], currentTab = 'placed';
+
+async function loadOrders() {
+  const r = await fetch(`${CONFIG.API_URL}/kitchen/orders`);
+  const kitchen = await r.json();
+  // Also get served for history
+  const all = await fetch(`${CONFIG.API_URL}/orders`,{headers:{'x-admin-token':sessionStorage.getItem('adminToken')||CONFIG.ADMIN_TOKEN}}).then(r=>r.json());
+  allOrders = all;
+
+  // Update counts
+  const counts = { placed:0, preparing:0, ready:0 };
+  kitchen.forEach(o => { if (counts[o.status]!==undefined) counts[o.status]++; });
+  document.getElementById('cnt-placed').textContent = counts.placed;
+  document.getElementById('cnt-preparing').textContent = counts.preparing;
+  document.getElementById('cnt-ready').textContent = counts.ready;
+
+  // Delayed badge
+  const delayed = kitchen.filter(o => (Date.now()-new Date(o.created_at))/60000 > 15);
+  const badge = document.getElementById('delayedBadge');
+  if (delayed.length) { badge.classList.remove('hidden'); badge.classList.add('flex'); document.getElementById('delayedCount').textContent = delayed.length; }
+  else badge.classList.add('hidden');
+
+  // Stats
+  const served = all.filter(o=>o.status==='served');
+  document.getElementById('ordersToday').textContent = all.length;
+  document.getElementById('efficiency').textContent = all.length ? Math.round((served.length/all.length)*100)+'%' : '—';
+  document.getElementById('avgPrep').textContent = '12.4 min';
+
+  renderBoard(kitchen, currentTab);
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-pill').forEach(b=>b.classList.remove('active'));
+  const map = {placed:'tab-active',preparing:'tab-preparing',ready:'tab-ready',served:'tab-history'};
+  document.getElementById(map[tab])?.classList.add('active');
+  loadOrders();
+}
+
+function renderBoard(orders, tab) {
+  const filtered = orders.filter(o => o.status === tab);
+  const board = document.getElementById('kanbanBoard');
+
+  if (!filtered.length) {
+    const icons = {placed:'receipt_long',preparing:'local_fire_department',ready:'done_all',served:'history'};
+    const msgs  = {placed:'No new orders',preparing:'Nothing in progress',ready:'Nothing ready yet',served:'No history'};
+    board.innerHTML = `<div class="flex flex-col items-center justify-center h-64 text-slate-300">
+      <span class="material-symbols-outlined text-5xl mb-3">${icons[tab]||'receipt_long'}</span>
+      <p class="font-bold">${msgs[tab]||'No orders'}</p>
+    </div>`; return;
+  }
+
+  // Show in 3-column grid for wider screens
+  board.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">${filtered.map(o=>buildCard(o)).join('')}</div>`;
+}
+
+function buildCard(order) {
+  const mins = Math.floor((Date.now()-new Date(order.created_at))/60000);
+  const isUrgent = mins > 15 && order.status==='placed';
+  const tableNum = order.tables?.table_number || '?';
+  const items = order.order_items || [];
+  const progress = Math.min(100, Math.round((mins/20)*100));
+
+  const cardCls = isUrgent ? 'urgent' : order.status==='preparing' ? 'preparing' : 'new';
+
+  const labels = [];
+  if (isUrgent) labels.push('<span class="label-chip label-urgent">Urgent</span>', `<span class="label-chip label-delayed">${mins} MINS • DELAYED</span>`);
+  else if (order.status==='preparing') labels.push('<span class="label-chip label-preparing">Preparing</span>',`<span class="label-chip label-progress">${mins} MINS • IN PROGRESS</span>`);
+  else labels.push('<span class="label-chip label-new">New</span>',`<span class="label-chip" style="background:#f0fdf4;color:#15803d">+${mins} MIN</span>`);
+
+  const actionBtn = () => {
+    if (order.status === 'placed') return `<button onclick="updateStatus('${order.id}','preparing')" class="action-primary"><span class="material-symbols-outlined text-base">local_fire_department</span> Start Preparing</button>`;
+    if (order.status === 'preparing') return `<div class="flex gap-2"><button onclick="updateStatus('${order.id}','ready')" class="action-primary green flex-1"><span class="material-symbols-outlined text-base">done_all</span> Mark Ready</button><button class="h-10 w-10 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 hover:bg-slate-50 shrink-0"><span class="material-symbols-outlined text-base">more_vert</span></button></div>`;
+    if (order.status === 'ready') return `<button onclick="updateStatus('${order.id}','served')" class="action-primary"><span class="material-symbols-outlined text-base">sentiment_satisfied</span> Mark Served</button>`;
+    return '';
+  };
+
+  return `
+    <div class="order-card ${cardCls}">
+      <div class="flex items-start justify-between mb-1">
+        <div class="flex items-center gap-2 flex-wrap">${labels.join('')}</div>
+        <div class="text-xs text-slate-400 font-semibold shrink-0 ml-2">Ordered<br>${new Date(order.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="flex items-center justify-between mt-2 mb-3">
+        <div>
+          <div class="text-lg font-black text-slate-900">Order #${order.id.slice(-3).toUpperCase()}</div>
+          <div class="text-xs text-slate-500 font-semibold">Table ${tableNum} • ${order.customer_name||'Guest'}</div>
+        </div>
+      </div>
+      ${order.status==='preparing' ? `<div class="progress-bar mb-3"><div class="progress-fill" style="width:${progress}%"></div></div>` : ''}
+      <div class="mb-1 text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Breakdown</div>
+      <div class="mb-4">
+        ${items.map(it=>`
+          <div class="item-row">
+            <span class="item-qty">${it.quantity}x</span>
+            <div>
+              <div class="text-sm font-bold text-slate-800">${it.menu_items?.name||'Item'}</div>
+              ${it.special_note?`<div class="text-[10px] text-slate-400 italic">${it.special_note}</div>`:''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      ${actionBtn()}
+    </div>
+  `;
+}
+
+async function updateStatus(id, status) {
+  await fetch(`${CONFIG.API_URL}/orders/${id}/status`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  showToast(status==='ready'?'✅ Marked Ready!':status==='served'?'🙌 Order Served':'🍳 Cooking started','success');
+  loadOrders();
+}
+
+function subscribeRealtime() {
+  if (!CONFIG.SUPABASE_URL||CONFIG.SUPABASE_URL.includes('your-project')){setInterval(loadOrders,8000);return;}
+  const sb=supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+  sb.channel('kitchen').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>{loadOrders();showToast('🔔 New order update!');}).subscribe();
+}
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3000);}
+
+loadOrders();
+subscribeRealtime();
+</script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Menu Inventory — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#4b3832'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:#f5f4f0; }
+
+/* Toggle */
+.toggle { position:relative; width:40px; height:22px; cursor:pointer; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-track { position:absolute; inset:0; background:#e2e8f0; border-radius:20px; transition:.3s; }
+.toggle input:checked ~ .toggle-track { background:#16a34a; }
+.toggle-thumb { position:absolute; top:3px; left:3px; width:16px; height:16px; background:#fff; border-radius:50%; transition:.3s; box-shadow:0 1px 4px rgba(0,0,0,.2); }
+.toggle input:checked ~ .toggle-thumb { transform:translateX(18px); }
+
+.cat-tab { padding:6px 16px; font-size:.8rem; font-weight:700; color:#64748b; border-bottom:2px solid transparent; transition:all .2s; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; }
+.cat-tab.active { color:#4b3832; border-bottom-color:#4b3832; }
+
+.category-pill { font-size:.65rem; font-weight:800; text-transform:uppercase; padding:2px 8px; border-radius:20px; letter-spacing:.05em; }
+.pill-main    { background:#dbeafe; color:#1e40af; }
+.pill-dessert { background:#fce7f3; color:#9d174d; }
+.pill-coffee  { background:#fef3c7; color:#92400e; }
+.pill-bakery  { background:#d1fae5; color:#065f46; }
+.pill-drinks  { background:#ede9fe; color:#5b21b6; }
+
+.stat-badge { display:inline-flex; align-items:center; gap:5px; font-size:.7rem; font-weight:700; }
+.stat-up   { color:#16a34a; }
+.stat-down { color:#dc2626; }
+
+.sync-bar { height:6px; border-radius:4px; background:#e2e8f0; overflow:hidden; }
+.sync-fill { height:100%; background:linear-gradient(90deg,#4b3832,#8d6e63); border-radius:4px; animation:syncIn 1.5s ease; }
+@keyframes syncIn { from{width:0} }
+
+/* Table hover */
+tr.item-row:hover td { background:#faf9f7; }
+tr.item-row td { transition:background .15s; }
+</style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-slate-100 px-6 py-3.5 flex items-center justify-between shrink-0 sticky top-0 z-50">
+  <div class="flex items-center gap-3">
+    <div class="h-8 w-8 rounded-lg bg-[#4b3832] flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-sm">restaurant_menu</span>
+    </div>
+    <span class="font-black text-slate-900 text-base">CulinaAdmin</span>
+  </div>
+  <div class="flex items-center gap-3">
+    <div class="relative">
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-base">search</span>
+      <input id="searchInput" placeholder="Search dishes…" oninput="filterItems()"
+        class="rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none w-52">
+    </div>
+    <button class="h-9 w-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500">
+      <span class="material-symbols-outlined text-base">notifications</span>
+    </button>
+    <button class="h-9 w-9 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500">
+      <span class="material-symbols-outlined text-base">settings</span>
+    </button>
+    <div class="h-9 w-9 rounded-full bg-[#4b3832] flex items-center justify-center text-white text-xs font-bold">A</div>
+  </div>
+</header>
+
+<main class="flex-1 px-6 py-6 max-w-5xl mx-auto w-full space-y-5">
+
+  <!-- Page title + CTA -->
+  <div class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-slate-900">Menu Inventory</h1>
+      <p class="text-slate-500 text-sm mt-0.5">Manage dishes, pricing, and stock availability across all locations.</p>
+    </div>
+    <button onclick="openModal()"
+      class="flex items-center gap-2 rounded-xl bg-[#4b3832] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:scale-105 transition-all active:scale-95">
+      <span class="material-symbols-outlined text-base">add</span> + Add New Dish
+    </button>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid grid-cols-3 gap-4">
+    <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+      <div class="flex items-start justify-between mb-2">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Total Dishes</div>
+        <span class="material-symbols-outlined text-slate-400 text-lg">restaurant_menu</span>
+      </div>
+      <div id="statTotal" class="text-3xl font-black text-slate-900">—</div>
+      <div class="stat-badge stat-up mt-1">↑ +5% from last month</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+      <div class="flex items-start justify-between mb-2">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Active Now</div>
+        <div class="h-3 w-3 rounded-full bg-green-500 mt-1"></div>
+      </div>
+      <div id="statActive" class="text-3xl font-black text-slate-900">—</div>
+      <div class="stat-badge stat-down mt-1">↓ -2% from yesterday</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+      <div class="flex items-start justify-between mb-2">
+        <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">Out of Stock</div>
+        <div class="h-3 w-3 rounded-full bg-red-500 mt-1"></div>
+      </div>
+      <div id="statOut" class="text-3xl font-black text-slate-900">—</div>
+      <div class="stat-badge stat-up mt-1">↑ +1% from last week</div>
+    </div>
+  </div>
+
+  <!-- Table card -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <!-- Real-time sync bar + category tabs -->
+    <div class="px-5 pt-4 pb-0 border-b border-slate-100">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-green-500 text-base">bolt</span>
+          <span class="text-xs font-bold text-green-600">Real-time sync: Active</span>
+          <span class="text-[10px] text-slate-400 font-medium" id="syncTime">Last updated: just now</span>
+        </div>
+        <div class="flex">
+          <button class="cat-tab active" onclick="filterCat('All',this)">All</button>
+          <button class="cat-tab" onclick="filterCat('Food',this)">Main Course</button>
+          <button class="cat-tab" onclick="filterCat('Bakery',this)">Bakery</button>
+          <button class="cat-tab" onclick="filterCat('Desserts',this)">Desserts</button>
+          <button class="cat-tab" onclick="filterCat('Coffee',this)">Coffee</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">
+            <th class="px-5 py-3 text-left">Dish Name</th>
+            <th class="px-4 py-3 text-left">SKU</th>
+            <th class="px-4 py-3 text-left">Category</th>
+            <th class="px-4 py-3 text-left">Base Price</th>
+            <th class="px-4 py-3 text-left">Availability</th>
+            <th class="px-4 py-3 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="menuBody">
+          <tr><td colspan="6" class="py-10 text-center"><div class="spinner" style="margin:0 auto;"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between">
+      <div id="paginInfo" class="text-xs text-slate-400 font-medium"></div>
+      <div class="flex items-center gap-1">
+        <button onclick="changePage(-1)" class="h-7 w-7 rounded-lg border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-50 text-xs">‹</button>
+        <div id="pageNums" class="flex gap-1"></div>
+        <button onclick="changePage(1)" class="h-7 w-7 rounded-lg border border-slate-200 text-slate-500 flex items-center justify-center hover:bg-slate-50 text-xs">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS Sync Status -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-slate-500 text-base">sync</span>
+        <span class="text-sm font-bold text-slate-700">POS Terminal Sync Status</span>
+      </div>
+      <span class="text-sm font-black text-green-600">100% Synced</span>
+    </div>
+    <div class="sync-bar"><div class="sync-fill" style="width:100%"></div></div>
+    <div class="flex items-center justify-between mt-2">
+      <span class="text-xs text-slate-400">All 14 restaurant locations are up to date.</span>
+      <button class="text-xs font-bold text-[#4b3832] hover:underline">Force Manual Sync</button>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-slate-100 bg-white px-6 py-4 flex items-center justify-between">
+  <div class="flex gap-5 text-xs font-medium text-slate-400">
+    <a href="#" class="hover:text-slate-600">Documentation</a>
+    <a href="#" class="hover:text-slate-600">API Keys</a>
+    <a href="#" class="hover:text-slate-600">Support</a>
+  </div>
+  <div class="text-xs text-slate-300 font-semibold">© 2024 CULINA SYSTEMS MANAGEMENT</div>
+</footer>
+
+<!-- Modal -->
+<div id="modalOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]">
+    <div class="flex items-center justify-between p-6 border-b border-slate-100">
+      <h2 id="modalTitle" class="text-lg font-black">Add New Dish</h2>
+      <button onclick="closeModal()" class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><span class="material-symbols-outlined text-lg">close</span></button>
+    </div>
+    <form id="itemForm" class="p-6 space-y-4">
+      <input type="hidden" id="editId">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Dish Name *</label>
+          <input type="text" id="f_name" required placeholder="e.g. Grilled Salmon"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"></div>
+        <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Category *</label>
+          <select id="f_category" required class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
+            <option value="">Select…</option>
+            <option>Coffee</option><option>Tea</option><option>Cold Drinks</option>
+            <option>Bakery</option><option>Food</option><option>Snacks</option><option>Desserts</option>
+          </select></div>
+      </div>
+      <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Description</label>
+        <textarea id="f_description" rows="2" placeholder="Short description…"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none resize-none"></textarea></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Base Price (₹) *</label>
+          <input type="number" id="f_price" min="0" step="0.5" required placeholder="0.00"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none"></div>
+        <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Availability</label>
+          <select id="f_available" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
+            <option value="true">✅ Available</option><option value="false">❌ Hidden</option>
+          </select></div>
+      </div>
+      <div><label class="block text-xs font-bold text-slate-600 mb-1.5">Image URL</label>
+        <input type="text" id="f_image_url" placeholder="https://… or upload via Cloudinary"
+          class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-primary focus:outline-none" oninput="previewUrl()">
+        <img id="imgPreview" class="mt-2 w-full h-40 object-cover rounded-xl hidden"></div>
+      <div class="flex gap-3 pt-2">
+        <button type="submit" id="saveBtn" class="flex-1 rounded-2xl bg-[#4b3832] py-3 text-sm font-black text-white hover:bg-[#3d2b1f] active:scale-95 transition-all">Save Dish</button>
+        <button type="button" onclick="closeModal()" class="flex-1 rounded-2xl border-2 border-slate-200 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+const H = { 'x-admin-token':token, 'Content-Type':'application/json' };
+let allItems = [], filtered = [], currentPage = 1, perPage = 8;
+const pillMap = { Food:'pill-main Main Course', Bakery:'pill-bakery Bakery', Desserts:'pill-dessert Desserts', Coffee:'pill-coffee Coffee', Tea:'pill-coffee Tea', Drinks:'pill-drinks Drinks', Snacks:'pill-bakery Snacks', 'Cold Drinks':'pill-drinks Cold Drinks' };
+
+async function loadItems() {
+  const r = await fetch(`${CONFIG.API_URL}/menu/all`, {headers:H});
+  allItems = await r.json();
+  filtered = [...allItems];
+
+  // Stats
+  document.getElementById('statTotal').textContent = allItems.length;
+  document.getElementById('statActive').textContent = allItems.filter(i=>i.is_available).length;
+  document.getElementById('statOut').textContent = allItems.filter(i=>!i.is_available).length;
+  document.getElementById('syncTime').textContent = `Last updated: ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})} ago`;
+
+  renderPage();
+}
+
+function renderPage() {
+  const start = (currentPage-1)*perPage;
+  const page = filtered.slice(start, start+perPage);
+  const tbody = document.getElementById('menuBody');
+
+  if (!page.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400 text-sm">No dishes found</td></tr>`;
+    document.getElementById('paginInfo').textContent = '';
+    document.getElementById('pageNums').innerHTML = '';
+    return;
+  }
+
+  const skuMap = { Food:'MC', Bakery:'BK', Desserts:'DS', Coffee:'CF', Tea:'TE', Drinks:'DR', Snacks:'SN', 'Cold Drinks':'CD' };
+  tbody.innerHTML = page.map((item, i) => {
+    const sku = `${(skuMap[item.category]||'IT')}-${String(start+i+1).padStart(3,'0')}`;
+    const [pillCls, pillLabel] = (pillMap[item.category]||'pill-coffee Coffee').split(' ');
+    const catLabel = pillLabel || item.category;
+    return `
+      <tr class="item-row border-b border-slate-50">
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-cover bg-center bg-slate-100 shrink-0"
+                 style="background-image:url('${item.image_url||'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70'}')"></div>
+            <div>
+              <div class="font-bold text-slate-900 text-sm">${item.name}</div>
+              <div class="text-xs text-slate-400 truncate max-w-[180px]">${item.description||''}</div>
+            </div>
+          </div>
+        </td>
+        <td class="px-4 py-3.5 font-mono text-xs text-slate-500">${sku}</td>
+        <td class="px-4 py-3.5"><span class="category-pill ${pillCls}">${catLabel}</span></td>
+        <td class="px-4 py-3.5 font-black text-slate-800">₹${parseFloat(item.price).toFixed(2)}</td>
+        <td class="px-4 py-3.5">
+          <label class="toggle" title="${item.is_available?'Available — click to hide':'Hidden — click to show'}">
+            <input type="checkbox" ${item.is_available?'checked':''} onchange="toggleAvail('${item.id}',this.checked)">
+            <span class="toggle-track"></span>
+            <span class="toggle-thumb"></span>
+          </label>
+        </td>
+        <td class="px-4 py-3.5">
+          <button onclick="editItem('${item.id}')" class="h-8 w-8 rounded-lg border border-slate-200 text-slate-400 flex items-center justify-center hover:border-primary hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-sm">edit</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Pagination info
+  document.getElementById('paginInfo').textContent = `Showing ${start+1} to ${Math.min(start+perPage,filtered.length)} of ${filtered.length} results`;
+  const totalPages = Math.ceil(filtered.length/perPage);
+  document.getElementById('pageNums').innerHTML = Array.from({length:Math.min(totalPages,5)},(_,i)=>i+1).map(p=>
+    `<button onclick="goPage(${p})" class="h-7 w-7 rounded-lg text-xs font-bold ${p===currentPage?'bg-[#4b3832] text-white':'border border-slate-200 text-slate-600 hover:bg-slate-50'}">${p}</button>`
+  ).join('');
+}
+
+function goPage(p) { currentPage = p; renderPage(); }
+function changePage(d) { const max=Math.ceil(filtered.length/perPage); currentPage=Math.min(Math.max(1,currentPage+d),max); renderPage(); }
+
+function filterItems() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  filtered = allItems.filter(i=>i.name.toLowerCase().includes(q)||(i.description||'').toLowerCase().includes(q));
+  currentPage=1; renderPage();
+}
+
+function filterCat(cat, btn) {
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  filtered = cat==='All' ? [...allItems] : allItems.filter(i=>i.category===cat);
+  currentPage=1; renderPage();
+}
+
+async function toggleAvail(id, val) {
+  await fetch(`${CONFIG.API_URL}/menu/${id}`,{method:'PUT',headers:H,body:JSON.stringify({is_available:val})});
+  const item = allItems.find(i=>i.id===id); if(item) item.is_available=val;
+  document.getElementById('statActive').textContent = allItems.filter(i=>i.is_available).length;
+  document.getElementById('statOut').textContent = allItems.filter(i=>!i.is_available).length;
+  showToast(val?'Item marked available':'Item hidden','success');
+}
+
+function openModal(item=null) {
+  document.getElementById('editId').value=item?.id||'';
+  document.getElementById('f_name').value=item?.name||'';
+  document.getElementById('f_description').value=item?.description||'';
+  document.getElementById('f_price').value=item?.price||'';
+  document.getElementById('f_category').value=item?.category||'';
+  document.getElementById('f_available').value=item?String(item.is_available):'true';
+  document.getElementById('f_image_url').value=item?.image_url||'';
+  document.getElementById('modalTitle').textContent=item?'Edit Dish':'Add New Dish';
+  const prev=document.getElementById('imgPreview');
+  if(item?.image_url){prev.src=item.image_url;prev.classList.remove('hidden');}else prev.classList.add('hidden');
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.add('hidden');}
+function editItem(id){openModal(allItems.find(i=>i.id===id));}
+function previewUrl(){const url=document.getElementById('f_image_url').value;const prev=document.getElementById('imgPreview');if(url){prev.src=url;prev.classList.remove('hidden');}else prev.classList.add('hidden');}
+
+document.getElementById('itemForm').addEventListener('submit',async(e)=>{
+  e.preventDefault();
+  const id=document.getElementById('editId').value;
+  const payload={name:document.getElementById('f_name').value,description:document.getElementById('f_description').value,price:parseFloat(document.getElementById('f_price').value),category:document.getElementById('f_category').value,image_url:document.getElementById('f_image_url').value,is_available:document.getElementById('f_available').value==='true'};
+  const btn=document.getElementById('saveBtn');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const r=await fetch(id?`${CONFIG.API_URL}/menu/${id}`:`${CONFIG.API_URL}/menu`,{method:id?'PUT':'POST',headers:H,body:JSON.stringify(payload)});
+    if(!r.ok)throw new Error((await r.json()).detail);
+    showToast(id?'Dish updated!':'Dish added!','success');closeModal();loadItems();
+  }catch(err){showToast('Error: '+err.message,'error');}
+  finally{btn.disabled=false;btn.textContent='Save Dish';}
+});
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3000);}
+
+loadItems();
+</script>
+</body>
+</html>

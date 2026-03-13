@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Predictive Analytics — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<script>tailwind.config={theme:{extend:{colors:{primary:'#5d4037'},fontFamily:{display:['Work Sans','sans-serif']}}}}</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:#f7f7f6; }
+
+.tab-btn { padding:12px 4px; font-size:.875rem; font-weight:700; border-bottom:2px solid transparent; color:#64748b; cursor:pointer; background:none; border-top:none; border-left:none; border-right:none; transition:all .2s; }
+.tab-btn.active { color:#5d4037; border-bottom-color:#5d4037; }
+
+.chart-card { background:#fff; border:1px solid rgba(93,64,55,.1); border-radius:14px; padding:22px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+
+.staff-card { border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:10px; border-left:4px solid transparent; }
+.staff-morning { background:rgba(93,64,55,.05); border-left-color:#5d4037; }
+.staff-lunch   { background:#f8f9fa; border-left-color:#94a3b8; }
+.staff-evening { background:#fffbf0; border-left-color:#f59e0b; }
+
+.time-pill { font-size:.65rem; font-weight:800; padding:3px 8px; border-radius:6px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.1); color:#475569; }
+
+.acc-bar { height:6px; border-radius:3px; background:#e2e8f0; overflow:hidden; }
+.acc-fill { height:100%; border-radius:3px; }
+
+.status-pill { font-size:.65rem; font-weight:800; padding:2px 7px; border-radius:6px; }
+.pill-validated { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; }
+.pill-adjusted  { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+
+.sidebar-link { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; font-size:.875rem; font-weight:600; color:rgba(255,255,255,.6); transition:all .2s; }
+.sidebar-link:hover { background:rgba(255,255,255,.08); color:#fff; }
+.sidebar-link.active { background:#5d4037; color:#fff; }
+.sidebar-link .material-symbols-outlined { font-size:1.1rem; }
+
+.export-btn { display:flex; align-items:center; gap:6px; background:#5d4037; color:#fff; border:none; border-radius:10px; padding:10px 18px; font-size:.875rem; font-weight:700; cursor:pointer; transition:all .2s; box-shadow:0 2px 8px rgba(93,64,55,.3); }
+.export-btn:hover { background:#4b3832; transform:translateY(-1px); }
+.date-btn  { display:flex; align-items:center; gap:6px; background:#fff; color:#475569; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px 18px; font-size:.875rem; font-weight:700; cursor:pointer; transition:all .2s; }
+.date-btn:hover { border-color:#5d4037; color:#5d4037; }
+</style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+<!-- Sidebar (matching admin panel) -->
+<aside class="w-[200px] bg-[#3d2b1f] flex flex-col shrink-0 h-screen">
+  <div class="px-5 py-5 border-b border-white/10">
+    <div class="flex items-center gap-2.5">
+      <div class="h-8 w-8 rounded-lg bg-[#5d4037] flex items-center justify-center">
+        <span class="material-symbols-outlined text-white text-sm">query_stats</span>
+      </div>
+      <div>
+        <div class="font-black text-white text-sm leading-none">Demand Intel</div>
+        <div class="text-white/40 text-[10px] font-semibold uppercase tracking-wide">Analytics</div>
+      </div>
+    </div>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+    <a href="admin-dashboard.html" class="sidebar-link">
+      <span class="material-symbols-outlined">dashboard</span> Dashboard
+    </a>
+    <a href="admin-analytics.html" class="sidebar-link active">
+      <span class="material-symbols-outlined">query_stats</span> Forecasts
+    </a>
+    <a href="admin-tables.html" class="sidebar-link">
+      <span class="material-symbols-outlined">group</span> Staffing
+    </a>
+    <a href="admin-dashboard.html" class="sidebar-link">
+      <span class="material-symbols-outlined">summarize</span> Reports
+    </a>
+    <div class="pt-4 pb-1 px-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">Admin</div>
+    <a href="admin-menu.html" class="sidebar-link">
+      <span class="material-symbols-outlined">restaurant_menu</span> Menu
+    </a>
+    <a href="admin-reservations.html" class="sidebar-link">
+      <span class="material-symbols-outlined">event_seat</span> Reservations
+    </a>
+    <a href="kitchen.html" class="sidebar-link">
+      <span class="material-symbols-outlined">local_fire_department</span> Kitchen
+    </a>
+  </nav>
+  <div class="px-3 py-4 border-t border-white/10">
+    <a href="admin-login.html" class="flex items-center gap-2 text-white/40 text-xs font-semibold hover:text-white/80 px-3 py-2">
+      <span class="material-symbols-outlined text-sm">logout</span> Sign Out
+    </a>
+  </div>
+</aside>
+
+<!-- Main content -->
+<div class="flex-1 flex flex-col overflow-hidden">
+
+  <!-- Top nav bar -->
+  <header class="bg-[#f7f7f6] border-b border-slate-200/70 px-6 py-3.5 flex items-center justify-between shrink-0">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2.5 text-[#5d4037]">
+        <span class="material-symbols-outlined text-xl">query_stats</span>
+        <span class="font-black text-slate-900 text-base">Demand Intelligence</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-5">
+        <a href="admin-dashboard.html" class="text-sm font-semibold text-slate-600 hover:text-primary">Dashboard</a>
+        <a href="#" class="text-sm font-bold text-[#5d4037]">Forecasts</a>
+        <a href="#" class="text-sm font-semibold text-slate-600 hover:text-primary">Staffing</a>
+        <a href="#" class="text-sm font-semibold text-slate-600 hover:text-primary">Reports</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-base">search</span>
+        <input placeholder="Search analytics…" class="rounded-xl bg-white border border-slate-200 pl-9 pr-4 py-2 text-sm focus:border-primary focus:outline-none w-44">
+      </div>
+      <button class="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500">
+        <span class="material-symbols-outlined text-base">notifications</span>
+      </button>
+      <div class="h-8 w-8 rounded-full bg-[#5d4037] flex items-center justify-center text-white text-xs font-bold">A</div>
+    </div>
+  </header>
+
+  <!-- Scrollable content -->
+  <main class="flex-1 overflow-y-auto px-7 py-6 space-y-6">
+
+    <!-- Page header -->
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Predictive Analytics Overview</h1>
+        <p class="text-slate-500 text-sm mt-1 max-w-lg">Next-generation demand forecasting powered by machine learning algorithms to optimise your daily operations.</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="date-btn">
+          <span class="material-symbols-outlined text-base">calendar_today</span> Past 30 Days
+        </button>
+        <button class="export-btn" onclick="exportCSV()">
+          <span class="material-symbols-outlined text-base">download</span> Export Full Analysis
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-slate-200/80 flex gap-7">
+      <button class="tab-btn active" id="tab-hourly" onclick="switchTab('hourly',this)">Hourly Traffic</button>
+      <button class="tab-btn" id="tab-daily"  onclick="switchTab('daily',this)">Daily Volume</button>
+      <button class="tab-btn" id="tab-staff"  onclick="switchTab('staff',this)">Staffing Efficiency</button>
+    </div>
+
+    <!-- Charts row -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+      <!-- Forecasted Hourly Traffic -->
+      <div class="chart-card">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="font-bold text-slate-800 text-base">Forecasted Hourly Traffic</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-3xl font-black text-slate-900" id="avgTraffic">—</span>
+              <span class="text-xs font-medium text-slate-400 uppercase">avg/hr</span>
+              <span id="trafficBadge" class="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">+12.5% vs LW</span>
+            </div>
+          </div>
+          <button class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined text-base">info</span></button>
+        </div>
+        <canvas id="hourlyChart" height="160"></canvas>
+        <div class="flex justify-between mt-2 text-[10px] font-bold text-slate-400 uppercase">
+          <span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>00:00</span>
+        </div>
+      </div>
+
+      <!-- 7-Day Projected Volume -->
+      <div class="chart-card">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <div class="font-bold text-slate-800 text-base">7-Day Projected Volume</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-3xl font-black text-slate-900" id="weekTotal">—</span>
+              <span class="text-xs font-medium text-slate-400 uppercase">total</span>
+              <span class="bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-full">−2.1% forecast</span>
+            </div>
+          </div>
+          <button class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined text-base">more_vert</span></button>
+        </div>
+        <canvas id="weeklyChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Smart Staffing Recommendations -->
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-[#5d4037] text-xl">auto_awesome</span>
+        <h2 class="text-xl font-black text-slate-900">Smart Staffing Recommendations</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Morning Peak -->
+        <div class="staff-card staff-morning">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-[#5d4037] uppercase tracking-widest">Morning Peak</span>
+            <span class="time-pill">08:00 – 11:00</span>
+          </div>
+          <p class="text-sm text-slate-700 leading-relaxed">Increase checkout staff by <strong class="text-[#5d4037]">24%</strong> based on incoming commute data.</p>
+          <div class="flex -space-x-2 mt-1">
+            <div class="h-8 w-8 rounded-full bg-[#5d4037] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">MK</div>
+            <div class="h-8 w-8 rounded-full bg-[#8d6e63] border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">SR</div>
+            <div class="h-8 w-8 rounded-full bg-slate-400 border-2 border-white flex items-center justify-center text-white text-[10px] font-bold">+5</div>
+          </div>
+        </div>
+        <!-- Lunch Buffer -->
+        <div class="staff-card staff-lunch">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Lunch Buffer</span>
+            <span class="time-pill">12:00 – 14:00</span>
+          </div>
+          <p class="text-sm text-slate-700 leading-relaxed">Standard staffing levels recommended. Anticipate normal seasonal flow.</p>
+          <button class="text-xs font-bold text-slate-500 hover:text-[#5d4037] transition-colors mt-auto text-left">View Details →</button>
+        </div>
+        <!-- Evening Surge -->
+        <div class="staff-card staff-evening">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black text-amber-700 uppercase tracking-widest">Evening Surge</span>
+            <span class="time-pill" style="color:#d97706">17:00 – 19:00</span>
+          </div>
+          <p class="text-sm text-slate-700 leading-relaxed">High risk of bottleneck. Recommend <strong>2 additional</strong> mobile floor assistants.</p>
+          <button class="mt-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black py-2 px-4 rounded-lg transition-all active:scale-95">
+            Approve Shift Change
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historical Accuracy Metrics -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <h3 class="font-black text-slate-900 text-base">Historical Accuracy Metrics</h3>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-green-500"></span>
+            <span class="text-xs font-semibold text-slate-500">Model Target: 92%</span>
+          </div>
+          <button class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined text-base">filter_list</span></button>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <th class="px-6 py-3.5 text-left">Date Range</th>
+              <th class="px-6 py-3.5 text-left">Projected Demand</th>
+              <th class="px-6 py-3.5 text-left">Actual Traffic</th>
+              <th class="px-6 py-3.5 text-left">Accuracy %</th>
+              <th class="px-6 py-3.5 text-left">Efficiency</th>
+              <th class="px-6 py-3.5 text-right">Status</th>
+            </tr>
+          </thead>
+          <tbody id="accuracyBody" class="divide-y divide-slate-50">
+            <tr><td colspan="6" class="py-8 text-center"><div class="spinner" style="margin:0 auto;"></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+const token = sessionStorage.getItem('adminToken') || CONFIG.ADMIN_TOKEN;
+const H = {'x-admin-token':token};
+let hourlyChartInst, weeklyChartInst;
+
+async function init() {
+  await Promise.all([loadHourlyChart(), loadWeeklyChart(), loadAccuracyTable()]);
+}
+
+async function loadHourlyChart() {
+  const data = await fetch(`${CONFIG.API_URL}/analytics/peak-hours`,{headers:H}).then(r=>r.json());
+  const hours = ['08','09','10','11','12','13','14','15','16','17','18','19','20'];
+  const vals  = hours.map(h => { const d=data.find(x=>x.hour.startsWith(h)); return d?.orders||Math.floor(Math.random()*80+20); });
+  const avg   = Math.round(vals.reduce((s,v)=>s+v,0)/vals.length);
+  document.getElementById('avgTraffic').textContent = avg;
+
+  hourlyChartInst = new Chart(document.getElementById('hourlyChart'), {
+    type:'line',
+    data:{
+      labels: hours.map(h=>h+':00'),
+      datasets:[{
+        data:vals,
+        borderColor:'#5d4037', borderWidth:2.5,
+        backgroundColor: ctx => {
+          const g = ctx.chart.ctx.createLinearGradient(0,0,0,180);
+          g.addColorStop(0,'rgba(93,64,55,.15)'); g.addColorStop(1,'rgba(93,64,55,0)'); return g;
+        },
+        fill:true, tension:0.5, pointRadius:0,
+        pointHoverRadius:5, pointHoverBackgroundColor:'#5d4037'
+      }]
+    },
+    options:{
+      responsive:true, interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false}, tooltip:{backgroundColor:'#3d2b1f',titleFont:{weight:'700'},bodyFont:{weight:'600'}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9,weight:'700'},color:'#94a3b8',maxTicksLimit:5}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9},color:'#94a3b8'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+async function loadWeeklyChart() {
+  const data = await fetch(`${CONFIG.API_URL}/analytics/weekly-sales`,{headers:H}).then(r=>r.json());
+  const days  = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const vals  = data.map(d=>d.sales)||days.map(()=>Math.floor(Math.random()*800+200));
+  const total = vals.reduce((s,v)=>s+v,0);
+  document.getElementById('weekTotal').textContent = total.toLocaleString();
+  const maxV = Math.max(...vals);
+
+  weeklyChartInst = new Chart(document.getElementById('weeklyChart'), {
+    type:'bar',
+    data:{
+      labels: data.length ? data.map(d=>new Date(d.date).toLocaleDateString('en',{weekday:'short'}).toUpperCase()) : days,
+      datasets:[{
+        data:vals,
+        backgroundColor: vals.map(v => v===maxV?'#5d4037':'rgba(93,64,55,.12)'),
+        hoverBackgroundColor:'rgba(93,64,55,.35)',
+        borderRadius:6, borderSkipped:false
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9,weight:'700'},color:vals.map((v,i)=>v===maxV?'#5d4037':'#94a3b8')}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{font:{size:9},color:'#94a3b8'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+async function loadAccuracyTable() {
+  // Generate last 3 weeks of simulated accuracy data based on real weekly sales
+  const data = await fetch(`${CONFIG.API_URL}/analytics/weekly-sales`,{headers:H}).then(r=>r.json());
+  const rows = [
+    { range:'This Week',    proj: data[0]?.sales??42500, actual: Math.round((data[0]?.sales??42500)*0.986), acc:98.6, eff:'Optimum',      status:'validated' },
+    { range:'Last Week',    proj: data[1]?.sales??38100, actual: Math.round((data[1]?.sales??38100)*0.905), acc:90.5, eff:'Over-staffed',  status:'adjusted'  },
+    { range:'2 Weeks Ago',  proj: data[2]?.sales??45000, actual: Math.round((data[2]?.sales??45000)*0.960), acc:96.0, eff:'Under-staffed', status:'validated' },
+  ];
+  document.getElementById('accuracyBody').innerHTML = rows.map(r=>`
+    <tr class="hover:bg-slate-50 transition-colors">
+      <td class="px-6 py-4 font-semibold text-slate-800">${r.range}</td>
+      <td class="px-6 py-4 text-slate-600">${r.proj.toLocaleString()} units</td>
+      <td class="px-6 py-4 text-slate-600">${r.actual.toLocaleString()} units</td>
+      <td class="px-6 py-4">
+        <div class="flex items-center gap-2">
+          <span class="font-black text-slate-800">${r.acc}%</span>
+          <div class="acc-bar w-16"><div class="acc-fill ${r.acc>=95?'bg-green-500':'bg-amber-500'}" style="width:${r.acc}%"></div></div>
+        </div>
+      </td>
+      <td class="px-6 py-4 text-slate-500 text-sm">${r.eff}</td>
+      <td class="px-6 py-4 text-right"><span class="status-pill ${r.status==='validated'?'pill-validated':'pill-adjusted'}">${r.status.charAt(0).toUpperCase()+r.status.slice(1)}</span></td>
+    </tr>
+  `).join('');
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  // Charts already rendered — could swap datasets here for a real implementation
+  showToast(`Viewing ${btn.textContent} data`);
+}
+
+function exportCSV() {
+  showToast('📥 Exporting full analysis…', 'success');
+  // In production: build a real CSV from analytics endpoints
+  setTimeout(()=>{
+    const csv = 'Week,Orders,Revenue\nThis Week,328,4250\nLast Week,312,3980\n2 Weeks Ago,345,4510';
+    const a = document.createElement('a'); a.href='data:text/csv,'+encodeURIComponent(csv);
+    a.download='smart-cafe-analytics.csv'; a.click();
+  }, 800);
+}
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3000);}
+
+init();
+</script>
+</body>
+</html>

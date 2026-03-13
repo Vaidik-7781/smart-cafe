@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Table Menu — Smart Cafe</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { primary:'#8b5e3c', secondary:'#4a3728', 'beige-light':'#f5f2ed', 'beige-dark':'#e8e2d9' },
+    fontFamily: { display:["'Work Sans'", 'sans-serif'] }
+  }}
+}
+</script>
+<style>
+body { font-family:'Work Sans',sans-serif; background:linear-gradient(135deg,#f5f2ed 0%,#ede8e0 100%); min-height:100vh; }
+
+.cat-tab { padding:14px 4px; font-size:.875rem; font-weight:700; border-bottom:3px solid transparent; color:#64748b; cursor:pointer; white-space:nowrap; transition:all .2s; background:none; border-top:none; border-left:none; border-right:none; }
+.cat-tab.active { color:#8b5e3c; border-bottom-color:#8b5e3c; }
+.cat-tab:hover { color:#8b5e3c; }
+
+.menu-card {
+  background:#fff; border-radius:14px; border:1px solid rgba(139,94,60,.12);
+  padding:16px; display:flex; gap:14px; align-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.06); transition:all .2s; cursor:pointer;
+}
+.menu-card:hover { border-color:rgba(139,94,60,.3); box-shadow:0 4px 16px rgba(139,94,60,.12); transform:translateY(-1px); }
+.menu-card.in-cart { border-color:#8b5e3c; background:#faf7f4; }
+
+.item-img { width:90px; height:90px; border-radius:10px; object-fit:cover; background:#f0ede8; flex-shrink:0; background-size:cover; background-position:center; }
+
+.add-btn { width:34px; height:34px; border-radius:50%; background:#4a3728; color:#fff; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .2s; flex-shrink:0; }
+.add-btn:hover { background:#8b5e3c; transform:scale(1.1); }
+.qty-ctrl { display:flex; align-items:center; gap:6px; }
+.qty-ctrl button { width:28px; height:28px; border-radius:50%; border:1.5px solid #8b5e3c; background:#fff; color:#8b5e3c; font-weight:800; font-size:.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.qty-ctrl button:hover { background:#8b5e3c; color:#fff; }
+.qty-ctrl span { font-weight:800; font-size:.9rem; color:#1e293b; min-width:18px; text-align:center; }
+
+.cart-bar { position:fixed; bottom:24px; right:24px; left:24px; max-width:460px; margin:0 auto; background:#4a3728; color:#fff; border-radius:40px; padding:14px 20px; display:flex; align-items:center; justify-between; gap:12px; cursor:pointer; box-shadow:0 8px 30px rgba(74,55,40,.4); z-index:100; transition:all .3s; }
+.cart-bar:hover { background:#3a2820; transform:translateY(-2px); }
+.cart-bar.hidden-bar { transform:translateY(120%); opacity:0; pointer-events:none; }
+
+.ai-banner { background:#fff; border:1.5px solid rgba(139,94,60,.2); border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px; }
+.ai-icon { width:42px; height:42px; border-radius:10px; background:rgba(139,94,60,.1); display:flex; align-items:center; justify-content:center; color:#8b5e3c; flex-shrink:0; }
+
+.section-header { font-size:1.25rem; font-weight:800; color:#1e293b; }
+.item-count { font-size:.8rem; color:#8b5e3c; font-weight:600; }
+
+/* Cart drawer */
+.cart-drawer { position:fixed; inset:0; z-index:200; display:none; align-items:flex-end; justify-content:center; }
+.cart-drawer.open { display:flex; }
+.cart-bg { position:absolute; inset:0; background:rgba(0,0,0,.4); backdrop-filter:blur(4px); }
+.cart-sheet { position:relative; background:#fff; border-radius:20px 20px 0 0; width:100%; max-width:480px; max-height:80vh; overflow-y:auto; animation:slideUp .3s ease; z-index:1; }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+.nav-link { font-size:.875rem; font-weight:600; color:#475569; transition:color .2s; }
+.nav-link:hover { color:#8b5e3c; }
+.nav-link.active { color:#1e293b; font-weight:700; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="sticky top-0 z-50 bg-[#f5f2ed]/90 backdrop-blur-md border-b border-[#8b5e3c]/15 px-4 py-3">
+  <div class="max-w-4xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-6">
+      <div class="flex items-center gap-2.5 text-[#8b5e3c]">
+        <span class="material-symbols-outlined text-2xl">restaurant_menu</span>
+        <span class="font-black text-[#1e293b] text-base">QR Table Menu</span>
+      </div>
+      <nav class="hidden md:flex gap-5">
+        <a href="#" class="nav-link active">Menu</a>
+        <a href="order-status.html" class="nav-link">Orders</a>
+        <a href="#" class="nav-link">Help</a>
+      </nav>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative hidden sm:block">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#8b5e3c]/60 text-base">search</span>
+        <input id="searchQ" oninput="handleSearch()" placeholder="Search menu…"
+          class="rounded-xl bg-[#8b5e3c]/8 border border-[#8b5e3c]/15 pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-[#8b5e3c]/40 w-40">
+      </div>
+      <div class="h-9 w-9 rounded-full bg-[#4a3728] border-2 border-[#8b5e3c]/30 flex items-center justify-center text-white text-xs font-bold">G</div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-4 py-5 pb-28 space-y-5">
+
+  <!-- Table title -->
+  <div>
+    <div class="flex items-center gap-2 mb-1">
+      <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+      <h1 id="tableTitle" class="text-2xl font-black text-[#1e293b]">Table — Pre-selected</h1>
+    </div>
+    <p class="text-slate-500 text-sm">Welcome back! Explore our curated selections for you today.</p>
+  </div>
+
+  <!-- AI Recommendations Banner -->
+  <div class="ai-banner">
+    <div class="ai-icon">
+      <span class="material-symbols-outlined text-lg">auto_awesome</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-black text-slate-900 text-sm mb-0.5">AI Food Recommendations</div>
+      <p class="text-slate-500 text-xs leading-relaxed" id="aiText">
+        Based on your table's history, we recommend adding our signature
+        <span class="font-bold text-[#8b5e3c]">Signature Latte</span> or <span class="font-bold text-[#8b5e3c]">Butter Croissant</span>.
+      </p>
+    </div>
+    <button onclick="scrollToSection('Coffee')" class="shrink-0 bg-[#8b5e3c] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-[#7a5233] transition-all">
+      View Sides
+    </button>
+  </div>
+
+  <!-- Category Tabs -->
+  <div class="sticky top-14 bg-[#f5f2ed]/95 backdrop-blur-sm z-40 -mx-4 px-4 border-b border-slate-200/60">
+    <div class="flex gap-6 overflow-x-auto scrollbar-hide" id="catTabs">
+      <button class="cat-tab active" onclick="switchCat(this,'All')">All</button>
+      <button class="cat-tab" onclick="switchCat(this,'Coffee')">Coffee</button>
+      <button class="cat-tab" onclick="switchCat(this,'Tea')">Pastries</button>
+      <button class="cat-tab" onclick="switchCat(this,'Food')">Breakfast</button>
+      <button class="cat-tab" onclick="switchCat(this,'Snacks')">Lunch Special</button>
+      <button class="cat-tab" onclick="switchCat(this,'Cold Drinks')">Beverages</button>
+    </div>
+  </div>
+
+  <!-- Menu sections -->
+  <div id="menuContent">
+    <div class="flex justify-center py-12">
+      <div class="spinner" style="width:28px;height:28px;"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-[#8b5e3c]/15 bg-[#4a3728]/8 px-4 py-4 text-center pb-20">
+  <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+    <div class="flex items-center gap-2 text-[#8b5e3c]">
+      <span class="material-symbols-outlined text-sm">restaurant</span>
+      <span class="font-bold text-xs">QR Table Menu System</span>
+    </div>
+    <p class="text-slate-400 text-xs">© 2024 Your Restaurant Name. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- Cart bar -->
+<div id="cartBar" class="cart-bar hidden-bar" onclick="openCart()">
+  <div class="flex items-center gap-2">
+    <span class="material-symbols-outlined text-lg">shopping_basket</span>
+    <span class="text-sm font-black" id="cartLabel">View Cart (0) • ₹0.00</span>
+  </div>
+  <span class="material-symbols-outlined text-lg ml-auto">arrow_forward_ios</span>
+</div>
+
+<!-- Cart Drawer -->
+<div id="cartDrawer" class="cart-drawer">
+  <div class="cart-bg" onclick="closeCart()"></div>
+  <div class="cart-sheet">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <div class="font-black text-slate-900 text-lg">Your Cart</div>
+      <button onclick="closeCart()" class="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500"><span class="material-symbols-outlined text-sm">close</span></button>
+    </div>
+    <div id="cartItems" class="px-5 py-4 space-y-3 min-h-[100px]"></div>
+    <div id="cartSummary" class="px-5 pb-5"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/config.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const tableId  = params.get('table_id') || localStorage.getItem('tableId') || '';
+const tableNum = params.get('table')    || localStorage.getItem('tableNum') || '';
+if (tableId) localStorage.setItem('tableId', tableId);
+if (tableNum) localStorage.setItem('tableNum', tableNum);
+
+// Cart state
+let cart = JSON.parse(localStorage.getItem('cafe_cart') || '[]');
+let allItems = [], currentCat = 'All';
+
+// Unsplash fallback images per category
+const catImgs = {
+  Coffee: ['https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&q=80','https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&q=80','https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=200&q=80','https://images.unsplash.com/photo-1534778101976-62847782c213?w=200&q=80'],
+  Tea:    ['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&q=80','https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=200&q=80'],
+  Food:   ['https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200&q=80','https://images.unsplash.com/photo-1484723091739-30990dd1e1c8?w=200&q=80'],
+  Bakery: ['https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=200&q=80','https://images.unsplash.com/photo-1588137378633-dea1336ce1e2?w=200&q=80'],
+  Snacks: ['https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=200&q=80','https://images.unsplash.com/photo-1485963631004-f2f00b1d6606?w=200&q=80'],
+  'Cold Drinks':['https://images.unsplash.com/photo-1544145945-f90425340c7e?w=200&q=80','https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=200&q=80'],
+  Desserts:['https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=200&q=80'],
+};
+function getImg(item, idx=0){
+  if(item.image_url && !item.image_url.includes('placeholder')) return item.image_url;
+  const arr = catImgs[item.category] || ['https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=200&q=80'];
+  return arr[idx % arr.length];
+}
+
+// Section display names
+const secNames = { Coffee:'Coffee Favorites', Tea:'Fresh Teas', Food:'Kitchen Favourites', Bakery:'Fresh Pastries', Snacks:'Light Bites', 'Cold Drinks':'Cold Beverages', Desserts:'Sweet Treats' };
+
+document.getElementById('tableTitle').textContent = `Table ${tableNum||'—'} — Pre-selected`;
+
+async function loadMenu() {
+  const r = await fetch(`${CONFIG.API_URL}/menu`);
+  allItems = await r.json();
+  if (allItems.length) {
+    // AI recommendation: pick 2 random available items
+    const picks = [...allItems].sort(()=>Math.random()-.5).slice(0,2);
+    document.getElementById('aiText').innerHTML = `Based on your table's history, we recommend adding our signature <span class="font-bold text-[#8b5e3c]">${picks[0]?.name||'Signature Latte'}</span> or <span class="font-bold text-[#8b5e3c]">${picks[1]?.name||'Butter Croissant'}</span>.`;
+  }
+  renderMenu();
+}
+
+function groupItems(items) {
+  const groups = {};
+  items.forEach(it => { if(!groups[it.category]) groups[it.category]=[]; groups[it.category].push(it); });
+  return groups;
+}
+
+function renderMenu() {
+  const filtered = currentCat === 'All' ? allItems : allItems.filter(i => {
+    const map = { Coffee:'Coffee', Tea:'Tea', Food:'Food', Snacks:'Snacks', 'Cold Drinks':'Cold Drinks', Desserts:'Desserts', Bakery:'Bakery' };
+    return i.category === (map[currentCat] || currentCat);
+  });
+
+  const groups = groupItems(filtered);
+  const el = document.getElementById('menuContent');
+
+  if (!Object.keys(groups).length) {
+    el.innerHTML = '<div class="flex flex-col items-center py-16 text-slate-400"><span class="material-symbols-outlined text-5xl mb-3">search_off</span><p class="font-semibold">No items found</p></div>';
+    return;
+  }
+
+  let catIdx = 0;
+  el.innerHTML = Object.entries(groups).map(([cat, items]) => {
+    const secId = `sec-${cat.replace(/\s/g,'-')}`;
+    const html = `
+      <div id="${secId}" class="space-y-3">
+        <div class="flex items-center justify-between pt-2">
+          <h2 class="section-header">${secNames[cat]||cat}</h2>
+          <span class="item-count">${items.length} Items available</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          ${items.map((item, i) => buildCard(item, catIdx + i)).join('')}
+        </div>
+      </div>
+    `;
+    catIdx += items.length;
+    return html;
+  }).join('<div class="pt-2"></div>');
+}
+
+function buildCard(item, imgIdx) {
+  const inCart = cart.find(c=>c.id===item.id);
+  const qty = inCart?.qty || 0;
+  const img = getImg(item, imgIdx);
+  return `
+    <div class="menu-card ${qty>0?'in-cart':''}" id="card-${item.id}">
+      <div class="item-img" style="background-image:url('${img}')"></div>
+      <div class="flex flex-col flex-1 min-w-0 justify-between gap-1">
+        <div>
+          <div class="font-bold text-slate-900 text-base leading-tight">${item.name}</div>
+          <div class="text-slate-500 text-xs mt-0.5 line-clamp-2">${item.description||''}</div>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-[#8b5e3c] font-black text-base">₹${parseFloat(item.price).toFixed(2)}</span>
+          ${qty > 0
+            ? `<div class="qty-ctrl">
+                <button onclick="adjustQty('${item.id}',-1)"><span class="material-symbols-outlined text-sm">remove</span></button>
+                <span>${qty}</span>
+                <button onclick="adjustQty('${item.id}',1)"><span class="material-symbols-outlined text-sm">add</span></button>
+               </div>`
+            : `<button class="add-btn" onclick="addToCart(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+                <span class="material-symbols-outlined text-base">add</span>
+               </button>`
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function addToCart(item) {
+  const existing = cart.find(c=>c.id===item.id);
+  if (existing) existing.qty++;
+  else cart.push({...item, qty:1});
+  saveCart(); renderMenu(); updateCartBar();
+  showToast(`Added ${item.name} to cart`, 'success');
+}
+function adjustQty(id, delta) {
+  const idx = cart.findIndex(c=>c.id===id);
+  if (idx<0) return;
+  cart[idx].qty += delta;
+  if (cart[idx].qty <= 0) cart.splice(idx,1);
+  saveCart(); renderMenu(); updateCartBar();
+}
+function saveCart() { localStorage.setItem('cafe_cart', JSON.stringify(cart)); }
+function updateCartBar() {
+  const total = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const count = cart.reduce((s,c)=>s+c.qty,0);
+  const bar = document.getElementById('cartBar');
+  document.getElementById('cartLabel').textContent = `View Cart (${count}) • ₹${total.toFixed(2)}`;
+  bar.classList.toggle('hidden-bar', count === 0);
+}
+
+function openCart() {
+  renderCartDrawer();
+  document.getElementById('cartDrawer').classList.add('open');
+}
+function closeCart() { document.getElementById('cartDrawer').classList.remove('open'); }
+
+function renderCartDrawer() {
+  const items = document.getElementById('cartItems');
+  const summary = document.getElementById('cartSummary');
+  if (!cart.length) { items.innerHTML='<p class="text-slate-400 text-sm text-center py-6">Your cart is empty</p>'; summary.innerHTML=''; return; }
+  items.innerHTML = cart.map(c=>`
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-lg bg-cover bg-center bg-slate-100 shrink-0" style="background-image:url('${getImg(c)}')"></div>
+      <div class="flex-1">
+        <div class="text-sm font-bold text-slate-900">${c.name}</div>
+        <div class="text-xs text-slate-500">₹${parseFloat(c.price).toFixed(2)} each</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="adjustQty('${c.id}',-1);renderCartDrawer();updateCartBar();" class="h-6 w-6 rounded-full border border-slate-300 text-slate-600 text-xs flex items-center justify-center">−</button>
+        <span class="text-sm font-black w-4 text-center">${c.qty}</span>
+        <button onclick="adjustQty('${c.id}',1);renderCartDrawer();updateCartBar();" class="h-6 w-6 rounded-full border border-slate-300 text-slate-600 text-xs flex items-center justify-center">+</button>
+      </div>
+      <span class="text-sm font-black text-slate-800 w-14 text-right">₹${(c.price*c.qty).toFixed(2)}</span>
+    </div>
+  `).join('');
+  const sub   = cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const tax   = +(sub*0.09).toFixed(2);
+  const total = sub+tax;
+  summary.innerHTML = `
+    <div class="border-t border-dashed border-slate-200 pt-4 space-y-2">
+      <div class="flex justify-between text-xs text-slate-500"><span>Subtotal</span><span>₹${sub.toFixed(2)}</span></div>
+      <div class="flex justify-between text-xs text-slate-500"><span>Service Fee (9%)</span><span>₹${tax.toFixed(2)}</span></div>
+      <div class="flex justify-between font-black text-slate-900 text-base pt-1"><span>Total</span><span>₹${total.toFixed(2)}</span></div>
+    </div>
+    <button onclick="placeOrder()" class="mt-4 w-full bg-[#4a3728] text-white font-black py-3.5 rounded-2xl text-base hover:bg-[#3a2820] transition-all active:scale-95">
+      Place Order →
+    </button>
+  `;
+}
+
+async function placeOrder() {
+  if (!cart.length) return;
+  const tid = tableId || localStorage.getItem('tableId');
+  if (!tid) { showToast('Please scan your table QR code first', 'error'); return; }
+  const btn = document.querySelector('#cartSummary button');
+  btn.disabled=true; btn.textContent='Placing order…';
+  try {
+    const subtotal = cart.reduce((s,c) => s + (c.price * c.qty), 0);
+    const tax_amount = Math.round(subtotal * (CONFIG.TAX_RATE||0.09) * 100) / 100;
+    const total_amount = Math.round((subtotal + tax_amount) * 100) / 100;
+    const r = await fetch(`${CONFIG.API_URL}/orders`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        table_id: tid,
+        customer_name: localStorage.getItem('customerName') || 'Guest',
+        items: cart.map(c=>({ menu_item_id:c.id, quantity:c.qty, unit_price:c.price })),
+        subtotal: Math.round(subtotal * 100) / 100,
+        tax_amount: tax_amount,
+        total_amount: total_amount,
+        payment_method: 'cash',
+        notes: ''
+    })
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || 'Order failed');
+    const order = await r.json();
+    cart = []; saveCart(); updateCartBar(); closeCart();
+    showToast('🎉 Order placed! Tracking your order…', 'success');
+    setTimeout(()=>{ window.location.href=`order-status.html?order_id=${order.order_id}&table=${tableNum}`; }, 1500);
+  } catch(e) { showToast('Error: '+e.message,'error'); btn.disabled=false; btn.textContent='Place Order →'; }
+}
+
+function switchCat(btn, cat) {
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = cat;
+  renderMenu();
+}
+function scrollToSection(cat) { const el=document.getElementById(`sec-${cat}`); if(el) el.scrollIntoView({behavior:'smooth'}); }
+function handleSearch() {
+  const q = document.getElementById('searchQ').value.toLowerCase();
+  if (!q) { renderMenu(); return; }
+  const old = allItems;
+  const tmp = allItems.filter(i=>i.name.toLowerCase().includes(q)||(i.description||'').toLowerCase().includes(q));
+  const groups = groupItems(tmp);
+  document.getElementById('menuContent').innerHTML = Object.entries(groups).map(([cat,items])=>`
+    <div class="space-y-3"><h2 class="section-header">${secNames[cat]||cat}</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${items.map((it,i)=>buildCard(it,i)).join('')}</div></div>
+  `).join('<div class="pt-2"></div>') || '<p class="text-center py-10 text-slate-400">No results</p>';
+}
+
+function showToast(msg,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;document.getElementById('toastContainer').appendChild(el);setTimeout(()=>el.remove(),3500);}
+
+loadMenu();
+updateCartBar();
+</script>
+</body>
+</html>
